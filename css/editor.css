@@ -74,7 +74,8 @@ aside{background:var(--ui-panel);overflow:hidden;display:flex;flex-direction:col
 .ed-tools button:hover{background:#2a2f40;color:#fff}
 .ed-tools [data-act=drag]{cursor:grab;font-size:16px}
 .ed-tools [data-act=del]:hover{background:var(--danger)}
-#page [data-edit]{outline:1px dashed transparent;outline-offset:3px;border-radius:2px;cursor:text}
+#page [data-edit]{outline:1px dashed transparent;outline-offset:3px;cursor:text}
+#page [data-edit]:not(.wk-btn){border-radius:2px}
 #page [data-edit]:hover{outline-color:rgba(124,92,255,.65)}
 #page [data-edit]:focus{outline:2px solid var(--acc);outline-offset:3px}
 #page iframe{pointer-events:none}
@@ -221,6 +222,15 @@ body.only .sec.look .sec-tag{color:var(--only)}
 
 .f-note{margin:4px 14px 8px;padding:9px 11px;border-radius:9px;background:rgba(34,211,238,.08);border:1px solid rgba(34,211,238,.3);color:#a5f3fc;font-size:12px;line-height:1.45}
 .f-note .btn-s{display:block;margin-top:7px}
+
+.exp-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:20px}
+.exp{position:relative;display:flex;flex-direction:column;gap:6px;text-align:left;border:1px solid var(--ui-line2);background:var(--ui-panel2);border-radius:12px;padding:18px;transition:.15s}
+.exp:hover{border-color:var(--acc);transform:translateY(-2px)}
+.exp span{font-size:28px}.exp b{font-size:15px}.exp small{color:var(--ui-tx2);line-height:1.5}
+.exp em{color:var(--acc2);font-style:normal}
+.exp i{position:absolute;top:12px;right:12px;font-style:normal;font-size:11px;font-weight:700;background:var(--acc);color:#fff;padding:3px 8px;border-radius:99px}
+@media (max-width:700px){.exp-grid{grid-template-columns:1fr}}
+.exp code{background:var(--ui-bg);padding:1px 5px;border-radius:4px;font-size:11px}
 
 /* ---------- modal, toast ---------- */
 #modal{position:fixed;inset:0;background:rgba(5,6,10,.7);backdrop-filter:blur(4px);display:grid;place-items:center;z-index:2000;padding:20px}

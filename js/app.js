@@ -21,7 +21,16 @@ const PAGE_COLORS = [
   { k: 'text', l: 'Szöveg', d: 'betűk színe' },
   { k: 'bg', l: 'Háttér', d: 'az oldal alapja' },
 ];
-const DEFAULT_PAGE = { title: 'Az én weboldalam', desc: '', font: 'Inter', headFont: '', primary: '#6d4aff', text: '#1f2433', bg: '#ffffff', radius: 10 };
+const DEFAULT_PAGE = { title: 'Az én weboldalam', desc: '', font: 'Inter', headFont: '', primary: '#6d4aff', text: '#1f2433', bg: '#ffffff', radius: 10, btnStyle: 'solid', btnShape: 'theme', btnSize: 'md', btnUpper: false };
+const BTN_FIELDS = [
+  { k: 'btnStyle', t: 'select', l: 'Stílus', o: [['solid', 'Teli'], ['outline', 'Körvonalas'], ['soft', 'Halvány'], ['shadow', 'Árnyékos'], ['gradient', 'Színátmenetes']] },
+  { k: 'btnShape', t: 'select', l: 'Forma', o: [['theme', 'Az oldal lekerekítése szerint'], ['square', 'Szögletes'], ['round', 'Enyhén lekerekített'], ['pill', 'Kapszula (teljesen kerek)']] },
+  { k: 'btnSize', t: 'select', l: 'Méret', o: [['sm', 'Kicsi'], ['md', 'Közepes'], ['lg', 'Nagy']] },
+  { k: 'btnUpper', t: 'check', l: 'Nagybetűs felirat' },
+];
+const BTN_SIZE = { sm: [10, 20, 15], md: [14, 28, 16], lg: [18, 36, 18] };
+const BTN_R = { square: '0px', round: '8px', pill: '999px' };
+const pageCls = pg => `bs-${pg.btnStyle || 'solid'}${pg.btnUpper ? ' bs-upper' : ''}`;
 const PAGE_FIELDS = [
   { k: 'title', t: 'text', l: 'Oldal címe', hint: 'a böngésző fülön és a Google találatban' },
   { k: 'desc', t: 'textarea', l: 'Leírás (SEO)', hint: 'rövid összefoglaló a keresőknek' },
@@ -163,11 +172,12 @@ function lum(hex) {
 const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); };
 const onColor = hex => contrast(hex, '#ffffff') >= contrast(hex, '#14161c') ? '#ffffff' : '#14161c';
 function pageVars(pg) {
-  return `--wk-onp:${onColor(pg.primary)};--wk-primary:${pg.primary};--wk-text:${pg.text};--wk-bg:${pg.bg};--wk-radius:${pg.radius}px;--wk-font:'${pg.font}',system-ui,sans-serif;` + (pg.headFont ? `--wk-head:'${pg.headFont}',system-ui,sans-serif;` : '');
+  const [py, px, fs] = BTN_SIZE[pg.btnSize] || BTN_SIZE.md;
+  return `--wk-btn-py:${py}px;--wk-btn-px:${px}px;--wk-btn-fs:${fs}px;${BTN_R[pg.btnShape] ? `--wk-btn-r:${BTN_R[pg.btnShape]};` : ''}--wk-onp:${onColor(pg.primary)};--wk-primary:${pg.primary};--wk-text:${pg.text};--wk-bg:${pg.bg};--wk-radius:${pg.radius}px;--wk-font:'${pg.font}',system-ui,sans-serif;` + (pg.headFont ? `--wk-head:'${pg.headFont}',system-ui,sans-serif;` : '');
 }
 function applyPage() {
   const page = $('#page');
-  page.style.cssText = pageVars(S.page); fitZoom();
+  page.style.cssText = pageVars(S.page); page.className = 'wk-page ' + pageCls(S.page); fitZoom();
   const u = fontsUrl(S.page); if ($('#pageFont').getAttribute('href') !== u) $('#pageFont').href = u;
 }
 
@@ -430,6 +440,7 @@ function renderInspector() {
 <div class="hint"><b>Tipp:</b> kattints egy blokkra a vásznon a paraméterei szerkesztéséhez, vagy közvetlenül a szövegre, hogy átírd.</div>
 <div class="sec"><div class="sec-h">Színek <button type="button" class="btn-s rnd" data-random title="Véletlen színek, betűtípus és elrendezés – Ctrl+Z visszavonja">🎲 Random téma</button></div><div class="ctiles">${PAGE_COLORS.map(c => `<div class="ctile" title="Kattints a színre a választáshoz"><input type="color" data-path="${c.k}" data-kind="cpick" value="${esc(S.page[c.k])}" aria-label="${c.l}"><b>${c.l}</b><small>${c.d}</small><input type="text" data-path="${c.k}" data-kind="ctext" value="${esc(S.page[c.k])}" spellcheck="false" maxlength="7"></div>`).join('')}</div></div>
 <div class="sec"><div class="sec-h">Téma és SEO</div>${PAGE_FIELDS.map(f => fieldHTML(f, S.page[f.k], f.k)).join('')}<div style="height:8px"></div></div>
+<div class="sec"><div class="sec-h">Gombok <span class="sec-tag">az oldal összes gombja</span></div>${BTN_FIELDS.map(f => fieldHTML(f, S.page[f.k], f.k)).join('')}<div class="f"><small class="f-hint0">A második („Tudj meg többet”) gombok mindig körvonalasak maradnak, hogy a fő gomb kiemelkedjen.</small></div></div>
 <div class="sec"><div class="sec-h">Animáció minden blokkra</div><div class="f anim-all"><select id="animAll">${COMMON_FIELDS.find(f => f.k === '_anim').o.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select><button type="button" class="btn-s" data-animall>Alkalmaz</button></div><div class="f"><small class="f-hint0">Utána blokkonként is átállítható: blokk → Megjelenés → Animáció.</small></div></div>
 <div class="sec"><div class="sec-h">Oldal szerkezete (${S.blocks.length} blokk)</div><div class="outline">${S.blocks.map(x => `<div class="ol-item" data-goto="${x.id}"><span>${esc(BLOCKS[x.type].icon)}</span>${esc(BLOCKS[x.type].name)}${x.p._id ? ` <small style="opacity:.5">#${esc(x.p._id)}</small>${idWarn(x.p._id, x.id) ? ' <small class="dup" title="Ugyanez az ID több blokknál is szerepel">⚠ ismétlődő ID</small>' : ''}` : ''}</div>`).join('') || '<div class="ol-item">–</div>'}</div></div></div>`;
   } else {
@@ -602,7 +613,7 @@ ${PAGE_CSS.trim()}${gcss.length ? '\n' + gcss.join('\n') : ''}
 </style>
 </head>
 <body>
-<div class="wk-page">
+<div class="wk-page ${pageCls(pg)}">
 ${body}
 </div>
 ${hasAnim ? `<script>\n${wkAnimIdx}\n${wkAnimInit}\nwkAnimInit();\n</script>\n` : ''}</body>
@@ -644,7 +655,58 @@ function download(name, text, type) {
   a.download = name; document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 }
-$('#btnExport').onclick = () => { download('index.html', buildHTML(), 'text/html'); toast('Kész: <b>index.html</b> – töltsd fel bármilyen tárhelyre.'); };
+/* ---- ZIP export: index.html + images/ mappa (a feltöltött képek külön fájlként) ---- */
+const CRC_T = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+const crc32 = u8 => { let c = 0xFFFFFFFF; for (let i = 0; i < u8.length; i++) c = CRC_T[(c ^ u8[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+function makeZip(files) {                       // tömörítés nélküli ("store") ZIP, UTF-8 fájlnevekkel
+  const enc = new TextEncoder(), parts = [], central = [], d = new Date();
+  const time = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1);
+  const date = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+  let off = 0;
+  for (const f of files) {
+    const name = enc.encode(f.name), crc = crc32(f.data), size = f.data.length;
+    const h = new DataView(new ArrayBuffer(30));
+    [[0, 0x04034b50, 4], [4, 20, 2], [6, 0x0800, 2], [8, 0, 2], [10, time, 2], [12, date, 2], [14, crc, 4], [18, size, 4], [22, size, 4], [26, name.length, 2], [28, 0, 2]]
+      .forEach(([o, v, n]) => n === 4 ? h.setUint32(o, v, true) : h.setUint16(o, v, true));
+    parts.push(h.buffer, name, f.data);
+    const c = new DataView(new ArrayBuffer(46));
+    [[0, 0x02014b50, 4], [4, 20, 2], [6, 20, 2], [8, 0x0800, 2], [10, 0, 2], [12, time, 2], [14, date, 2], [16, crc, 4], [20, size, 4], [24, size, 4], [28, name.length, 2], [30, 0, 2], [32, 0, 2], [34, 0, 2], [36, 0, 2], [38, 0, 4], [42, off, 4]]
+      .forEach(([o, v, n]) => n === 4 ? c.setUint32(o, v, true) : c.setUint16(o, v, true));
+    central.push(c.buffer, name);
+    off += 30 + name.length + size;
+  }
+  const cdSize = central.reduce((a, x) => a + x.byteLength, 0), e = new DataView(new ArrayBuffer(22));
+  [[0, 0x06054b50, 4], [8, files.length, 2], [10, files.length, 2], [12, cdSize, 4], [16, off, 4]].forEach(([o, v, n]) => n === 4 ? e.setUint32(o, v, true) : e.setUint16(o, v, true));
+  return new Blob([...parts, ...central, e.buffer], { type: 'application/zip' });
+}
+function extractImages(html) {                 // beágyazott (data:) képek → images/kep-1.jpg …
+  const map = new Map(), ext = { jpeg: 'jpg', jpg: 'jpg', png: 'png', gif: 'gif', webp: 'webp', 'svg+xml': 'svg' };
+  const out = html.replace(/data:image\/(png|jpe?g|gif|webp|svg\+xml);base64,[A-Za-z0-9+/=]+/g, (m, t) => {
+    if (!map.has(m)) map.set(m, `images/kep-${map.size + 1}.${ext[t] || 'img'}`);
+    return map.get(m);
+  });
+  const images = [...map].map(([uri, name]) => { const bin = atob(uri.slice(uri.indexOf(',') + 1)), u8 = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i); return { name, data: u8 }; });
+  return { html: out, images };
+}
+function exportZip() {
+  const root = slug(S.page.title), { html, images } = extractImages(buildHTML());
+  const files = [{ name: `${root}/index.html`, data: new TextEncoder().encode(html) }, ...images.map(im => ({ name: `${root}/${im.name}`, data: im.data }))];
+  downloadBlob(root + '.zip', makeZip(files));
+  toast(`Kész: <b>${root}.zip</b> – index.html${images.length ? ` + ${images.length} kép az images mappában` : ''}. Csomagold ki, és a mappa tartalmát töltsd fel.`);
+}
+function exportHTML() { download('index.html', buildHTML(), 'text/html'); toast('Kész: <b>index.html</b> – töltsd fel bármilyen tárhelyre.'); }
+function downloadBlob(name, blob) {
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+$('#btnExport').onclick = () => {
+  const imgs = (JSON.stringify(S.blocks).match(/data:image\//g) || []).length;
+  openModal(`<div class="m-h">Export – hogyan kéred?<button data-m="x">✕</button></div><div class="exp-grid">
+<button class="exp" data-exp="zip"><span>📦</span><b>ZIP – mappa képekkel</b><small>index.html + a feltöltött képek külön <code>images</code> mappában. Kisebb, gyorsabban betöltődő oldal.${imgs ? ` <em>(${imgs} feltöltött kép)</em>` : ''}</small><i>Ajánlott</i></button>
+<button class="exp" data-exp="html"><span>📄</span><b>Egyetlen HTML fájl</b><small>Minden egy <code>index.html</code>-ben, a képek is beágyazva. Egyszerű, de sok képnél nagy fájl.</small></button>
+</div><p class="m-note">Mindkettő bármilyen tárhelyre feltölthető (saját tárhely, GitHub Pages, Netlify, Cloudflare Pages). A képek internetes címei (pl. mintaképek) linkként maradnak.</p>`);
+};
 $('#btnPreview').onclick = () => {
   const w = window.open(URL.createObjectURL(new Blob([buildHTML()], { type: 'text/html' })), '_blank');
   if (!w) toast('A böngésző blokkolta az új ablakot – engedélyezd a felugró ablakokat.', 'err');
@@ -663,6 +725,8 @@ const modal = $('#modal');
 function openModal(html) { modal.innerHTML = `<div class="m-box">${html}</div>`; modal.hidden = false; }
 modal.addEventListener('click', e => {
   if (e.target === modal || e.target.closest('[data-m=x]')) { modal.hidden = true; return; }
+  const ex = e.target.closest('[data-exp]');
+  if (ex) { modal.hidden = true; ex.dataset.exp === 'zip' ? exportZip() : exportHTML(); return; }
   const t = e.target.closest('[data-tpl]');
   if (t) { snap(); S = fromTemplate(t.dataset.tpl); sel = null; modal.hidden = true; refreshAll(); $('#stage').scrollTop = 0; toast('Új oldal létrehozva. (Ctrl+Z visszahozza az előzőt)'); }
 });
@@ -679,7 +743,8 @@ $('#btnHelp').onclick = () => openModal(`<div class="m-h">Hogyan működik?<butt
 <p><b>Blokkok összekapcsolása</b> – Megjelenés → Háttér: <i>Folytatja az előző blokk hátterét</i> (több blokk egy közös háttéren). Határ a szomszéd blokkokkal: formázott határvonal (hullám, ív, ferde, csúcs, cikcakk), lágy átmenet, átlógás.</p>
 <p><b>🎲 Random téma</b> – véletlen, de összeillő színek, betűtípusok, lekerekítés, térközök, elrendezés és animáció. A tartalom nem változik. Nyomd többször; <kbd>Ctrl/⌘ Z</kbd> visszahozza az előzőt.</p>
 <p><b>Horgonyok (menüből ugrás egy szakaszra)</b> – a blokk <i>Horgony (ID)</i> mezőjébe: <code>rolunk</code> (# nélkül), a menüpont linkjébe: <code>#rolunk</code> – a link mezőben legördülő listából is választhatsz. A szerkesztőben a linkek nem ugranak el (hogy a feliratot átírhasd); kipróbálni <kbd>Ctrl/⌘</kbd> + kattintással vagy az Előnézetben lehet.</p>
-<p><b>5. Export</b> – a <i>HTML export</i> egyetlen önálló <code>index.html</code>-t ad, amit bármilyen tárhelyre feltölthetsz (Netlify, GitHub Pages, saját tárhely). A <i>Mentés</i> projekt fájlt készít, amit később újra megnyithatsz.</p>
+<p><b>Gombok</b> – Oldal beállítások → Gombok: stílus (teli, körvonalas, halvány, árnyékos, színátmenetes), forma, méret, nagybetűs felirat – az oldal összes gombjára.</p>
+<p><b>5. Export</b> – <i>ZIP</i>: index.html + a feltöltött képek külön <code>images</code> mappában (ajánlott), vagy <i>egyetlen HTML fájl</i>, a képek beágyazva. Bármilyen tárhelyre feltölthető (Netlify, GitHub Pages, saját tárhely). A <i>Mentés</i> projekt fájlt készít, amit később újra megnyithatsz.</p>
 <p><kbd>Ctrl/⌘ Z</kbd> visszavonás · <kbd>Ctrl/⌘ Shift Z</kbd> újra · <kbd>Ctrl/⌘ D</kbd> duplikálás · <kbd>Del</kbd> törlés · <kbd>Alt ↑/↓</kbd> mozgatás · <kbd>Esc</kbd> kijelölés megszüntetése · <kbd>Ctrl/⌘ S</kbd> projekt mentése</p>
 <p style="color:var(--ui-tx3)">A munkád automatikusan mentődik ebbe a böngészőbe is.</p>
 <p style="color:var(--ui-tx3)">WEBEKI ${VERSION} · ingyenes, nyílt forráskódú (GPL v3) · <a href="https://github.com/Ekidio/webeki" target="_blank" rel="noopener" style="color:var(--acc2)">github.com/Ekidio/webeki</a></p></div>`);
@@ -797,7 +862,7 @@ function randomTheme() {
   Object.assign(S.page, dark
     ? { primary: hsl(h, rint(70, 90), rint(60, 68)), text: hsl(h, 14, 90), bg: hsl(h, rint(18, 30), rint(6, 9)) }
     : { primary: hsl(h, rint(65, 88), rint(40, 50)), text: hsl(h, rint(20, 35), rint(10, 16)), bg: Math.random() < .5 ? '#ffffff' : hsl(h, rint(25, 45), rint(97, 99)) },
-    { font, headFont, radius: rnd([0, 4, 8, 12, 16, 24]) });
+    { font, headFont, radius: rnd([0, 4, 8, 12, 16, 24]), btnStyle: rnd(['solid', 'solid', 'outline', 'soft', 'shadow', 'gradient']), btnShape: rnd(['theme', 'theme', 'pill', 'square', 'round']), btnUpper: Math.random() < .2 });
   for (let l = 48; !dark && contrast(S.page.primary, S.page.bg) < 3.6 && l > 20; l -= 3) S.page.primary = hsl(h, 80, l);
   const tint = dark ? hsl(h, rint(18, 28), rint(10, 13)) : hsl(h, rint(30, 55), rint(94, 97));
   const alt = rnd([0, 1, -1]), pad = rnd([72, 88, 104, 120]);

@@ -482,10 +482,22 @@ const PAGE_CSS = `
 .wk-lead{font-size:clamp(17px,2cqi,22px);opacity:.9;max-width:720px;margin-bottom:34px}
 .wk-txt{opacity:.8;margin-bottom:24px}
 .wk-btns{display:flex;gap:12px;flex-wrap:wrap}
-.wk-btn{display:inline-flex;align-items:center;justify-content:center;padding:14px 28px;border-radius:var(--wk-radius);background:var(--wk-primary);color:var(--wk-onp,#fff);text-decoration:none;font-weight:600;border:2px solid var(--wk-primary);transition:transform .2s,filter .2s;font-size:16px;line-height:1.2;cursor:pointer;font-family:inherit}
+.wk-btn{display:inline-flex;align-items:center;justify-content:center;padding:var(--wk-btn-py,14px) var(--wk-btn-px,28px);border-radius:var(--wk-btn-r,var(--wk-radius));background:var(--wk-primary);color:var(--wk-onp,#fff);text-decoration:none;font-weight:600;border:2px solid var(--wk-primary);transition:transform .2s,filter .2s,background .2s,color .2s,box-shadow .2s;font-size:var(--wk-btn-fs,16px);line-height:1.2;cursor:pointer;font-family:inherit}
 .wk-btn:hover{filter:brightness(1.08);transform:translateY(-2px)}
 .wk-btn.o{background:transparent;color:inherit;border-color:currentColor}
-.wk-btn.sm{padding:10px 20px;font-size:15px}
+.wk-btn.sm{padding:calc(var(--wk-btn-py,14px)*.72) calc(var(--wk-btn-px,28px)*.72);font-size:calc(var(--wk-btn-fs,16px)*.93)}
+/* gomb stílusok (Oldal beállítások → Gombok) – a .wk-page osztálya dönti el */
+.bs-outline .wk-btn:not(.o){background:transparent;color:var(--wk-primary)}
+.bs-outline .wk-btn:not(.o):hover{background:var(--wk-primary);color:var(--wk-onp,#fff)}
+.bs-soft .wk-btn:not(.o){background:color-mix(in srgb,var(--wk-primary) 15%,transparent);color:var(--wk-primary);border-color:transparent}
+.bs-soft .wk-btn:not(.o):hover{background:var(--wk-primary);color:var(--wk-onp,#fff)}
+.bs-shadow .wk-btn:not(.o){box-shadow:0 10px 24px -8px color-mix(in srgb,var(--wk-primary) 75%,transparent)}
+.bs-shadow .wk-btn:not(.o):hover{box-shadow:0 16px 32px -8px color-mix(in srgb,var(--wk-primary) 85%,transparent);filter:none}
+.bs-gradient .wk-btn:not(.o){background:linear-gradient(135deg,color-mix(in srgb,var(--wk-primary) 78%,#fff),color-mix(in srgb,var(--wk-primary) 72%,#000));border-color:transparent}
+.bs-outline .wk-cta .wk-btn,.bs-soft .wk-cta .wk-btn{background:transparent;color:var(--wk-onp,#fff);border-color:var(--wk-onp,#fff)}
+.bs-outline .wk-cta .wk-btn:hover,.bs-soft .wk-cta .wk-btn:hover{background:var(--wk-onp,#fff);color:var(--wk-primary)}
+.bs-gradient .wk-cta .wk-btn{background:var(--wk-onp,#fff);color:var(--wk-primary)}
+.bs-upper .wk-btn{text-transform:uppercase;letter-spacing:.07em;font-size:calc(var(--wk-btn-fs,16px)*.88)}
 .wk-grid{display:grid;gap:28px;grid-template-columns:repeat(3,minmax(0,1fr))}
 .wk-grid.c2{grid-template-columns:repeat(2,minmax(0,1fr))}.wk-grid.c4{grid-template-columns:repeat(4,minmax(0,1fr))}
 .wk-card{background:rgba(127,127,127,.08);border-radius:calc(var(--wk-radius)*1.6);padding:32px}

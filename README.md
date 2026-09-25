@@ -9,6 +9,8 @@ A WEBEKI a drága, fizetős blokkos szerkesztők (pl. Mobirise) ingyenes, nyílt
 - **Asztali, tablet és mobil nézet:** a tartalom mindenhol közös, a megjelenés (pl. igazítás, oszlopok, térköz, elrejtés) nézetenként is külön állítható.
 - **Animáció blokkonként:** be/ki kapcsolható, választható típus (beúszás 4 irányból, előtűnés, nagyítás, billenés), időtartam, késleltetés, lépcsőzetes megjelenés.
 - **Ikonok:** emoji vagy rajzolt ikon választóból; **közösségi ikonok** (Facebook, Instagram, YouTube, TikTok, X, LinkedIn, WhatsApp, Messenger, Telegram, Pinterest, GitHub) a menüben, a kapcsolat blokkban és a láblécben.
+- **Gombstílusok:** teli, körvonalas, halvány, árnyékos vagy színátmenetes; szögletes, lekerekített vagy kapszula forma; 3 méret.
+- **Export ZIP-be vagy egy HTML fájlba:** a ZIP-ben a feltöltött képek külön `images` mappába kerülnek.
 - **🎲 Random téma:** egy kattintás, és új, összeillő színek, betűtípusok és elrendezés, a tartalom változatlan.
 - **Sablonok:** termék landing, cégbemutató, portfólió, vagy üres oldal.
 - **Magyar felület**, visszavonás, automatikus mentés a böngészőbe.
@@ -33,7 +35,11 @@ Szerver és internet sem kell hozzá. Kivétel: a Google betűtípusok és a min
 2. **Beállítás:** kattints egy blokkra, és jobb oldalt megjelenik minden beállítása. Üres területre kattintva az **oldal beállításait** látod: a 3 alapszín (fő szín, szöveg, háttér), betűtípus, lekerekítés, SEO, az oldal szerkezete.
 3. **Szöveg átírása:** kattints közvetlenül a szövegre az oldalon.
 4. **Áthelyezés, törlés:** a blokk jobb felső sarkában: ⠿ húzás, ↑ ↓, ⧉ duplikálás, ✕ törlés.
-5. **Közzététel:** a **HTML export** gomb egyetlen `index.html`-t ad. Töltsd fel bármilyen tárhelyre (saját tárhely, GitHub Pages, Netlify, Cloudflare Pages), és kész a weboldalad.
+5. **Közzététel:** az **Export** gombbal két lehetőség közül választhatsz:
+   - 📦 **ZIP – mappa képekkel** (ajánlott): `index.html` + a feltöltött képek külön `images` mappában. Kisebb, gyorsabban betöltődő oldal.
+   - 📄 **Egyetlen HTML fájl**: minden egy `index.html`-ben, a képek is beágyazva.
+
+   Töltsd fel bármilyen tárhelyre (saját tárhely, GitHub Pages, Netlify, Cloudflare Pages), és kész a weboldalad.
 
 ### Asztali, tablet és mobil nézet
 
@@ -63,6 +69,17 @@ Blokk → **Megjelenés**:
   - **Felső / alsó határvonal:** hullám, sűrű hullámok, ferde, domború vagy homorú ív, csúcs, cikcakk. Magassága és tükrözése állítható. A színét magától a szomszéd blokkból veszi (felülírható).
   - **Lágy átmenet az előző blokkból:** a határ nem éles vonal, hanem az előző blokk színe állítható magasságú sávban olvad át ebbe.
   - **Átlógás:** a blokk tartalma felcsúszik az előző blokkba (pl. egy kép félig a nyitó képre lóg). Animációval együtt adja a rétegzett, „Apple-es” hatást.
+
+### Gombok
+
+Oldal beállítások → **Gombok** – az oldal összes gombjára egyszerre:
+
+- **Stílus:** teli, körvonalas, halvány, árnyékos, színátmenetes
+- **Forma:** az oldal lekerekítése szerint, szögletes, enyhén lekerekített, kapszula
+- **Méret:** kicsi, közepes, nagy
+- **Nagybetűs felirat**
+
+A második („Tudj meg többet”) gombok mindig körvonalasak maradnak, hogy a fő gomb kiemelkedjen. A gombfelirat színe (fehér vagy sötét) mindig a fő színhez igazodik.
 
 ### Lekerekítés
 
