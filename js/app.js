@@ -15,13 +15,11 @@ const FONTS = {
   'Open Sans': '400;500;600;700;800', 'Lato': '400;700;900', 'Raleway': '400;500;600;700;800', 'Nunito': '400;600;700;800',
   'DM Sans': '400;500;700', 'Space Grotesk': '400;500;600;700', 'Playfair Display': '400;600;700;800', 'Merriweather': '400;700;900',
 };
-const PALETTES = [
-  { n: 'Lila', primary: '#6d4aff', text: '#1f2433', bg: '#ffffff' },
-  { n: 'Óceán', primary: '#0284c7', text: '#0f172a', bg: '#f8fafc' },
-  { n: 'Erdő', primary: '#15803d', text: '#1a2a1e', bg: '#fbfdf8' },
-  { n: 'Narancs', primary: '#ea580c', text: '#2a1a0e', bg: '#fffaf5' },
-  { n: 'Rózsa', primary: '#e11d48', text: '#1f1f23', bg: '#ffffff' },
-  { n: 'Sötét', primary: '#8b5cf6', text: '#e7e8ee', bg: '#0c0e14' },
+/* az oldal 3 alapszíne (Oldal beállítások → Színek) */
+const PAGE_COLORS = [
+  { k: 'primary', l: 'Fő szín', d: 'gombok, kiemelések' },
+  { k: 'text', l: 'Szöveg', d: 'betűk színe' },
+  { k: 'bg', l: 'Háttér', d: 'az oldal alapja' },
 ];
 const DEFAULT_PAGE = { title: 'Az én weboldalam', desc: '', font: 'Inter', headFont: '', primary: '#6d4aff', text: '#1f2433', bg: '#ffffff', radius: 10 };
 const PAGE_FIELDS = [
@@ -29,10 +27,7 @@ const PAGE_FIELDS = [
   { k: 'desc', t: 'textarea', l: 'Leírás (SEO)', hint: 'rövid összefoglaló a keresőknek' },
   { k: 'font', t: 'select', l: 'Betűtípus – szöveg', o: Object.keys(FONTS) },
   { k: 'headFont', t: 'select', l: 'Betűtípus – címsorok', o: [['', '(ugyanaz)'], ...Object.keys(FONTS)] },
-  { k: 'primary', t: 'color', l: 'Fő szín (gombok, kiemelések)' },
-  { k: 'text', t: 'color', l: 'Szövegszín' },
-  { k: 'bg', t: 'color', l: 'Háttérszín' },
-  { k: 'radius', t: 'range', l: 'Lekerekítés', min: 0, max: 30, unit: 'px' },
+  { k: 'radius', t: 'range', l: 'Lekerekítés (sarkok)', min: 0, max: 30, unit: 'px', hint: 'gombok és űrlapmezők pontosan ennyi; kártyák, képek, videó arányosan nagyobb (×1,4–2); 0 = szögletes' },
 ];
 
 /* ---------------- nézetek (desktop / tablet / mobil) ----------------
@@ -103,9 +98,17 @@ function newBlock(type, over = {}) {
 function fromTemplate(key) {
   return { page: { ...DEFAULT_PAGE }, blocks: TEMPLATES[key].blocks.map(x => Array.isArray(x) ? newBlock(x[0], x[1]) : newBlock(x)) };
 }
+function migrate(b) {
+  const p = b.p || {};
+  if (b.type === 'hero') {
+    if ('img' in p && !('_bgType' in p)) Object.assign(p, { _bgType: 'image', _bgImg: p.img, _bgOv: p.overlay ?? 55 });
+    delete p.img; delete p.overlay;
+  }
+  return b;
+}
 function normalize(s) {
   s.page = { ...DEFAULT_PAGE, ...(s.page || {}) };
-  s.blocks = (s.blocks || []).filter(b => BLOCKS[b.type])
+  s.blocks = (s.blocks || []).filter(b => BLOCKS[b.type]).map(migrate)
     .map(b => ({ id: b.id || uid(), type: b.type, p: fixLinks({ ...COMMON_DEFAULTS, ...clone(BLOCKS[b.type].defaults), ...b.p }), ...(b.r ? { r: cleanOv(b) } : {}) }));
   return s;
 }
@@ -151,8 +154,16 @@ function fontsUrl(pg) {
   const fs = [...new Set([pg.font, pg.headFont].filter(f => FONTS[f]))];
   return fs.length ? `https://fonts.googleapis.com/css2?${fs.map(f => `family=${f.replace(/ /g, '+')}:wght@${FONTS[f]}`).join('&')}&display=swap` : '';
 }
+/* szín világossága (WCAG) → a fő színen fehér vagy sötét szöveg legyen */
+function lum(hex) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex || ''); if (!m) return 0;
+  return [0, 2, 4].map(i => parseInt(m[1].substr(i, 2), 16) / 255).map(c => c <= .03928 ? c / 12.92 : ((c + .055) / 1.055) ** 2.4)
+    .reduce((a, c, i) => a + c * [.2126, .7152, .0722][i], 0);
+}
+const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); };
+const onColor = hex => contrast(hex, '#ffffff') >= contrast(hex, '#14161c') ? '#ffffff' : '#14161c';
 function pageVars(pg) {
-  return `--wk-primary:${pg.primary};--wk-text:${pg.text};--wk-bg:${pg.bg};--wk-radius:${pg.radius}px;--wk-font:'${pg.font}',system-ui,sans-serif;` + (pg.headFont ? `--wk-head:'${pg.headFont}',system-ui,sans-serif;` : '');
+  return `--wk-onp:${onColor(pg.primary)};--wk-primary:${pg.primary};--wk-text:${pg.text};--wk-bg:${pg.bg};--wk-radius:${pg.radius}px;--wk-font:'${pg.font}',system-ui,sans-serif;` + (pg.headFont ? `--wk-head:'${pg.headFont}',system-ui,sans-serif;` : '');
 }
 function applyPage() {
   const page = $('#page');
@@ -160,15 +171,29 @@ function applyPage() {
   const u = fontsUrl(S.page); if ($('#pageFont').getAttribute('href') !== u) $('#pageFont').href = u;
 }
 
+/* ---------------- szomszédok és háttér csoportok ---------------- */
+const groupsOf = () => S.blocks.reduce((g, b, i) => { if (i && b.p._bgLink && g.length) g[g.length - 1].push(b); else g.push([b]); return g; }, []);
+const leaderIdx = i => { while (i > 0 && S.blocks[i].p._bgLink) i--; return i; };
+const inGroup = b => { const i = idxOf(b.id); return !!(b.p._bgLink && i > 0) || !!S.blocks[i + 1]?.p._bgLink; };
+function ctxOf(i, dev) {
+  const vis = j => S.blocks[j] && !eff(S.blocks[j], dev)._hide;
+  let a = i - 1; while (a >= 0 && !vis(a)) a--;
+  let z = i + 1; while (z < S.blocks.length && !vis(z)) z++;
+  const col = j => { if (j < 0 || j >= S.blocks.length) return 'var(--wk-bg)'; const L = S.blocks[leaderIdx(j)]; return bgColorOf(eff(L, dev), L.type); };
+  return { prevC: col(a), nextC: col(z), linkPrev: i > 0 && !!S.blocks[i].p._bgLink, linkNext: !!S.blocks[i + 1]?.p._bgLink };
+}
+
 /* ---------------- vászon ---------------- */
 const page = $('#page');
 function wrap(b) {
   const d = BLOCKS[b.type], dev = curDev(), e = eff(b, dev), n = ovCount(b, dev);
   const others = DEVS.filter(x => x !== dev && ovCount(b, x)).map(x => DEV_S[x]).join('');
-  return `<div class="ed-block${b.id === sel ? ' sel' : ''}${e._hide ? ' ed-hidden' : ''}" data-id="${b.id}"${e._hide ? ` data-hid="Rejtve – ${DEV_N[dev]} nézetben"` : ''}><div class="ed-tools"><span class="ed-name">${esc(d.name)}</span>${n ? `<span class="ed-ov" title="${n} beállítás csak ${DEV_N[dev]} nézetben tér el">📌 ${n}</span>` : ''}${others ? `<span class="ed-ov2" title="Más nézetekben eltér: ${others}">${others}</span>` : ''}<button data-act="drag" draggable="true" title="Húzd az áthelyezéshez">⠿</button><button data-act="up" title="Fel">↑</button><button data-act="down" title="Le">↓</button><button data-act="dup" title="Duplikálás (Ctrl+D)">⧉</button><button data-act="del" title="Törlés (Del)">✕</button></div>${renderBlock({ ...b, p: e }, true)}</div>`;
+  return `<div class="ed-block${b.id === sel ? ' sel' : ''}${e._hide ? ' ed-hidden' : ''}" data-id="${b.id}"${e._hide ? ` data-hid="Rejtve – ${DEV_N[dev]} nézetben"` : ''}><div class="ed-tools"><span class="ed-name">${esc(d.name)}</span>${n ? `<span class="ed-ov" title="${n} beállítás csak ${DEV_N[dev]} nézetben tér el">📌 ${n}</span>` : ''}${others ? `<span class="ed-ov2" title="Más nézetekben eltér: ${others}">${others}</span>` : ''}${b.p._bgLink && idxOf(b.id) > 0 ? '<span class="ed-ov2" title="Folytatja az előző blokk hátterét">⛓</span>' : ''}<button data-act="drag" draggable="true" title="Húzd az áthelyezéshez">⠿</button><button data-act="up" title="Fel">↑</button><button data-act="down" title="Le">↓</button><button data-act="dup" title="Duplikálás (Ctrl+D)">⧉</button><button data-act="del" title="Törlés (Del)">✕</button></div>${renderBlock({ ...b, p: e }, true, '', ctxOf(idxOf(b.id), dev))}</div>`;
 }
 function renderCanvas() {
-  page.innerHTML = S.blocks.length ? S.blocks.map(wrap).join('')
+  const dev = curDev();
+  page.innerHTML = S.blocks.length ? groupsOf().map(g => g.length > 1
+    ? `<div class="wk-bgg" style="${esc(groupStyle(eff(g[0], dev), g[0].type))}">${g.map(wrap).join('')}</div>` : wrap(g[0])).join('')
     : `<div class="ed-empty"><div><b>Az oldal üres</b>Húzz ide egy blokkot a bal oldali könyvtárból,<br>vagy kattints egy blokkra a hozzáadáshoz.</div></div>`;
 }
 function refreshBlock(id) {
@@ -331,7 +356,7 @@ const insp = $('#insp');
 const opt = o => Array.isArray(o) ? o : [o, o];
 
 function fieldHTML(f, v, path, mark = '') {
-  const id = 'f_' + path.replace(/\./g, '_');
+  const id = 'f_' + String(path || '').replace(/\./g, '_');
   const lab = `<label class="f-l" for="${id}">${esc(f.l)}${mark}${f.hint ? `<small>${esc(f.hint)}</small>` : ''}</label>`;
   switch (f.t) {
     case 'text': {
@@ -349,16 +374,23 @@ function fieldHTML(f, v, path, mark = '') {
       return `<div class="f f-check"><label><input type="checkbox" data-path="${path}"${v ? ' checked' : ''}> ${esc(f.l)}</label>${mark}${f.hint ? `<small class="f-hint">${esc(f.hint)}</small>` : ''}</div>`;
     case 'color': {
       const hex = /^#[0-9a-f]{6}$/i.test(v) ? v : '#ffffff';
-      return `<div class="f">${lab}<div class="f-color${v ? '' : ' auto'}"><input type="color" data-path="${path}" data-kind="cpick" value="${hex}"><input id="${id}" type="text" data-path="${path}" data-kind="ctext" value="${esc(v)}" placeholder="téma szerint"><button type="button" data-cclear="${path}" title="Téma szerinti (alapértelmezett)">↺</button></div></div>`;
+      return `<div class="f">${lab}<div class="f-color${v ? '' : ' auto'}"><input type="color" data-path="${path}" data-kind="cpick" value="${hex}"><input id="${id}" type="text" data-path="${path}" data-kind="ctext" value="${esc(v)}" placeholder="${f.ph || 'téma szerint'}"><button type="button" data-cclear="${path}" title="Téma szerinti (alapértelmezett)">↺</button></div></div>`;
     }
     case 'image':
       return `<div class="f">${lab}<div class="f-img"><div class="thumb" style="background-image:url(&quot;${esc(v)}&quot;)"></div><div class="f-img-r"><input id="${id}" type="text" data-path="${path}" value="${esc(String(v).startsWith('data:') ? '(feltöltött kép)' : v)}" placeholder="Kép URL (https://…)"><label class="btn-s">Kép feltöltése…<input type="file" accept="image/*" data-upload="${path}" hidden></label></div></div></div>`;
+    case 'icon':
+      return `<div class="f">${lab}<div class="f-icon"><button type="button" class="ico-prev" data-pick="${path}" title="Ikon választása">${v ? icoHTML(v) : '＋'}</button><input id="${id}" type="text" data-path="${path}" value="${esc(v)}" placeholder="írj be egy emojit, vagy válassz"><button type="button" class="btn-s" data-pick="${path}">Választás…</button></div></div>`;
+    case 'note':
+      return `<div class="f-note">${esc(f.l)}${f.btn ? `<button type="button" class="btn-s" data-act2="${f.act}">${esc(f.btn)}</button>` : ''}</div>`;
+    case 'head':
+      return `<div class="sub-h">${esc(f.l)}${f.play ? '<button type="button" class="btn-s" data-play title="Animáció kipróbálása">▶ Lejátszás</button>' : ''}</div>`;
     case 'list':
       return `<div class="f f-list">${lab}${(v || []).map((it, i) => listItemHTML(f, it, i, path)).join('')}<button type="button" class="btn-add" data-li="add" data-list="${path}">+ ${esc(f.addL || 'Új elem')}</button></div>`;
   }
   return '';
 }
 function itemLabel(f, it, i) {
+  if (f.lab) return f.lab(it);
   const tf = f.fields.find(x => ['title', 'name', 'label', 'q', 'caption'].includes(x.k) && it[x.k]) || f.fields.find(x => x.t === 'text' && it[x.k]);
   return tf ? it[tf.k] : `${i + 1}. elem`;
 }
@@ -378,7 +410,7 @@ function markHTML(b, k) {
 }
 function blockFields(b, fields) {
   const e = eff(b), dev = curDev();
-  return fields.map(f => { const h = fieldHTML(f, e[f.k], f.k, markHTML(b, f.k)); return f.k in ovOf(b, dev) ? h.replace(/^<div class="f/, '<div class="f ov') : h; }).join('');
+  return fields.filter(f => !f.when || f.when(e)).map(f => { const h = fieldHTML(f, e[f.k], f.k, markHTML(b, f.k)); return f.k in ovOf(b, dev) ? h.replace(/^<div class="f/, '<div class="f ov') : h; }).join('');
 }
 function scopeBar(b) {
   const dev = curDev(), n = b ? ovCount(b, dev) : 0;
@@ -396,15 +428,16 @@ function renderInspector() {
     insp.dataset.target = 'page';
     insp.innerHTML = `<div class="panel-h"><span class="ph-t">⚙ Oldal beállítások</span></div><div class="insp-body">${scope === 'only' ? scopeBar(null) : ''}
 <div class="hint"><b>Tipp:</b> kattints egy blokkra a vásznon a paraméterei szerkesztéséhez, vagy közvetlenül a szövegre, hogy átírd.</div>
-<div class="sec"><div class="sec-h">Színpaletták</div><div class="pals">${PALETTES.map((p, i) => `<button type="button" class="pal" data-pal="${i}"><i><span style="background:${p.bg}"></span><span style="background:${p.primary}"></span><span style="background:${p.text}"></span></i>${p.n}</button>`).join('')}</div></div>
+<div class="sec"><div class="sec-h">Színek <button type="button" class="btn-s rnd" data-random title="Véletlen színek, betűtípus és elrendezés – Ctrl+Z visszavonja">🎲 Random téma</button></div><div class="ctiles">${PAGE_COLORS.map(c => `<div class="ctile" title="Kattints a színre a választáshoz"><input type="color" data-path="${c.k}" data-kind="cpick" value="${esc(S.page[c.k])}" aria-label="${c.l}"><b>${c.l}</b><small>${c.d}</small><input type="text" data-path="${c.k}" data-kind="ctext" value="${esc(S.page[c.k])}" spellcheck="false" maxlength="7"></div>`).join('')}</div></div>
 <div class="sec"><div class="sec-h">Téma és SEO</div>${PAGE_FIELDS.map(f => fieldHTML(f, S.page[f.k], f.k)).join('')}<div style="height:8px"></div></div>
+<div class="sec"><div class="sec-h">Animáció minden blokkra</div><div class="f anim-all"><select id="animAll">${COMMON_FIELDS.find(f => f.k === '_anim').o.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select><button type="button" class="btn-s" data-animall>Alkalmaz</button></div><div class="f"><small class="f-hint0">Utána blokkonként is átállítható: blokk → Megjelenés → Animáció.</small></div></div>
 <div class="sec"><div class="sec-h">Oldal szerkezete (${S.blocks.length} blokk)</div><div class="outline">${S.blocks.map(x => `<div class="ol-item" data-goto="${x.id}"><span>${esc(BLOCKS[x.type].icon)}</span>${esc(BLOCKS[x.type].name)}${x.p._id ? ` <small style="opacity:.5">#${esc(x.p._id)}</small>${idWarn(x.p._id, x.id) ? ' <small class="dup" title="Ugyanez az ID több blokknál is szerepel">⚠ ismétlődő ID</small>' : ''}` : ''}</div>`).join('') || '<div class="ol-item">–</div>'}</div></div></div>`;
   } else {
     const d = BLOCKS[b.type];
     insp.dataset.target = b.id;
     insp.innerHTML = `<div class="panel-h"><span class="ph-t"><span style="color:var(--acc2)">${esc(d.icon)}</span>${esc(d.name)}</span><span class="ph-b"><button type="button" data-bact="dup" title="Duplikálás">⧉</button><button type="button" class="del" data-bact="del" title="Törlés">🗑</button><button type="button" data-bact="close" title="Bezárás (Esc)">✕</button></span></div>
-<div class="insp-body"><div class="sec"><div class="sec-h">Tartalom <span class="sec-tag">🔗 minden nézetben közös</span></div>${blockFields(b, [...d.fields, ...COMMON_FIELDS].filter(f => !isLook(f)))}<div style="height:8px"></div></div>
-<div class="sec look"><div class="sec-h">Megjelenés <span class="sec-tag">nézetenként állítható</span></div>${scopeBar(b)}${blockFields(b, [...d.fields, ...COMMON_FIELDS].filter(isLook))}<div style="height:8px"></div></div></div>`;
+<div class="insp-body"><div class="sec"><div class="sec-h">Tartalom <span class="sec-tag">🔗 minden nézetben közös</span></div>${blockFields(b, [...d.fields, ...COMMON_FIELDS].filter(f => !isLook(f) && f.sec !== 'look'))}<div style="height:8px"></div></div>
+<div class="sec look"><div class="sec-h">Megjelenés <span class="sec-tag">nézetenként állítható</span></div>${scopeBar(b)}${blockFields(b, [...d.fields, ...COMMON_FIELDS].filter(f => isLook(f) || f.sec === 'look'))}<div style="height:8px"></div></div></div>`;
   }
   insp.insertAdjacentHTML('beforeend', anchorList());
   if (keep) $('.insp-body', insp).scrollTop = keep;
@@ -417,7 +450,8 @@ function setField(path, v, key) {
   else {
     const b = getB(tgt); if (!b) return;
     const had = JSON.stringify(b.r || {});
-    writeVal(b, path, v); refreshBlock(b.id);
+    writeVal(b, path, v);
+    if (/^(_bg|_g|_div|_fade|_pull|_hide)/.test(path) || inGroup(b)) renderCanvas(); else refreshBlock(b.id);
     if (had !== JSON.stringify(b.r || {})) renderInspectorSoon();   // változott a jelölés
   }
   save();
@@ -435,6 +469,7 @@ insp.addEventListener('input', e => {
   if (el.dataset.kind === 'cpick') { el.parentElement.querySelector('[data-kind=ctext]').value = v; el.parentElement.classList.remove('auto'); }
   if (el.dataset.kind === 'ctext') { if (/^#[0-9a-f]{6}$/i.test(v)) el.parentElement.querySelector('[data-kind=cpick]').value = v; el.parentElement.classList.toggle('auto', !v); }
   if (el.closest('.f-img') && String(getPath(currentTarget(), path)).startsWith('data:') && v === '(feltöltött kép)') return;
+  if (insp.dataset.target === 'page' && el.dataset.kind === 'ctext' && !/^#[0-9a-f]{6}$/i.test(v)) return;   // félig begépelt színkód
   const key = path.split('.').pop();
   if (el.type === 'text' && (key === '_id' || isLinkKey(key))) {   // # / ékezet / szóköz javítása gépelés közben
     const nv = key === '_id' ? anchorId(v, true) : fixHref(v, true);
@@ -443,6 +478,12 @@ insp.addEventListener('input', e => {
   setField(path, v, insp.dataset.target + ':' + path);
   const warn = el.parentElement.querySelector('.f-warn');
   if (warn) warn.textContent = key === '_id' ? idWarn(v, sel) : linkWarn(v);
+  const prev = el.parentElement.querySelector('.ico-prev'); if (prev) prev.innerHTML = v ? icoHTML(v) : '＋';
+  const b = getB(insp.dataset.target);
+  if (b) {
+    if (fieldOf(b.type, path)?.re) renderInspector();        // pl. animáció be/ki → a további mezők megjelennek/eltűnnek
+    if (/^_anim/.test(path)) playAnim(b.id);
+  }
   if (el.closest('.f-img')) el.closest('.f-img').querySelector('.thumb').style.backgroundImage = `url("${v}")`;
   const m = path.match(/^(.+)\.(\d+)\.\w+$/);           // lista elem címkéjének frissítése
   if (m) {
@@ -474,13 +515,23 @@ insp.addEventListener('click', e => {
   const t = e.target;
   const cc = t.closest('[data-cclear]');
   if (cc) { setField(cc.dataset.cclear, ''); renderInspector(); return; }
+  if (t.closest('[data-act2=goleader]')) { select(S.blocks[leaderIdx(idxOf(sel))].id, true); return; }
+  const pk = t.closest('[data-pick]');
+  if (pk) { openPicker(pk.dataset.pick, pk); return; }
+  if (t.closest('[data-play]')) { const b = getB(sel); if (b && eff(b)._anim !== 'none') playAnim(b.id); else toast('Előbb válassz egy animációt.'); return; }
+  if (t.closest('[data-random]')) { randomTheme(); return; }
+  if (t.closest('[data-animall]')) {
+    const v = $('#animAll').value; snap();
+    S.blocks.forEach(b => { if (b.type === 'navbar') return; b.p._anim = v; DEVS.forEach(d => { if (b.r?.[d]) delete b.r[d]._anim; }); });
+    renderCanvas(); save(); toast(v === 'none' ? 'Animáció kikapcsolva minden blokkon.' : 'Animáció beállítva minden blokkra (a menüsor kivételével).');
+    if (v !== 'none') S.blocks.forEach((b, i) => setTimeout(() => playAnim(b.id), 0));
+    return;
+  }
   const ovr = t.closest('[data-ovreset]');
   if (ovr) { e.preventDefault(); const b = getB(sel); snap(); delete b.r[curDev()][ovr.dataset.ovreset]; if (!ovCount(b, curDev())) delete b.r[curDev()]; refreshBlock(b.id); renderInspector(); save(); return; }
   const sc = t.closest('.scope-sw [data-scope]');
   if (sc) { setScope(sc.dataset.scope); return; }
   if (t.closest('[data-ovresetall]')) { const b = getB(sel); snap(); delete b.r[curDev()]; refreshBlock(b.id); renderInspector(); save(); toast(`Eltérések törölve – ${DEV_N[curDev()]} nézet most a közös értékeket mutatja.`); return; }
-  const pal = t.closest('[data-pal]');
-  if (pal) { const p = PALETTES[pal.dataset.pal]; snap(); Object.assign(S.page, { primary: p.primary, text: p.text, bg: p.bg }); applyPage(); renderInspector(); save(); return; }
   const go = t.closest('[data-goto]');
   if (go) { select(go.dataset.goto, true); return; }
   const ba = t.closest('[data-bact]');
@@ -531,6 +582,8 @@ function readImage(file) {
 function buildHTML() {
   const pg = S.page, fu = fontsUrl(pg);
   const nav = S.blocks.find(b => b.type === 'navbar' && DEVS.some(d => eff(b, d).sticky && !eff(b, d)._hide));
+  const gcss = [], body = exportBody(gcss);
+  const hasAnim = S.blocks.some(b => DEVS.some(d => { const e = eff(b, d); return e._anim !== 'none' && !e._hide; }));
   const navH = nav ? Math.max(...DEVS.map(d => { const e = eff(nav, d); return e._pt + e._pb + 44; })) : 0;
   return `<!DOCTYPE html>
 <html lang="hu">
@@ -539,38 +592,49 @@ function buildHTML() {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(pg.title)}</title>
 ${pg.desc ? `<meta name="description" content="${esc(pg.desc)}">\n` : ''}<meta name="generator" content="WEBEKI">
-${fu ? `<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n<link rel="stylesheet" href="${esc(fu)}">\n` : ''}<style>
+${fu ? `<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n<link rel="stylesheet" href="${esc(fu)}">\n` : ''}${hasAnim ? '<script>document.documentElement.className+=" wk-js"</script>\n' : ''}<style>
 html{scroll-behavior:smooth${navH ? `;scroll-padding-top:${navH}px` : ''}}body{margin:0}
 @media (min-width:1025px){.wk-only:not(.wk-on-d){display:none!important}}
 @media (min-width:601px) and (max-width:1024px){.wk-only:not(.wk-on-t){display:none!important}}
 @media (max-width:600px){.wk-only:not(.wk-on-m){display:none!important}}
 .wk-page{${pageVars(pg)}min-height:100vh}
-${PAGE_CSS.trim()}
+${PAGE_CSS.trim()}${gcss.length ? '\n' + gcss.join('\n') : ''}
 </style>
 </head>
 <body>
 <div class="wk-page">
-${S.blocks.map(exportBlock).filter(Boolean).join('\n')}
+${body}
 </div>
-</body>
+${hasAnim ? `<script>\n${wkAnimIdx}\n${wkAnimInit}\nwkAnimInit();\n</script>\n` : ''}</body>
 </html>
 `;
 }
 /* ha egy blokk nézetenként eltér, minden különböző változat bekerül, és CSS dönti el, melyik látszik */
+function exportBody(gcss) {
+  return groupsOf().map(g => {
+    const inner = g.map(exportBlock).filter(Boolean).join('\n');
+    if (g.length < 2) return inner;
+    const L = g[0], cls = 'g-' + L.id, st = DEVS.map(d => groupStyle(eff(L, d), L.type));
+    if (st.every(x => x === st[0])) gcss.push(`.${cls}{${st[0]}}`);
+    else gcss.push(`@media (min-width:1025px){.${cls}{${st[0]}}}`, `@media (min-width:601px) and (max-width:1024px){.${cls}{${st[1]}}}`, `@media (max-width:600px){.${cls}{${st[2]}}}`);
+    return `<div class="wk-bgg ${cls}">\n${inner}\n</div>`;
+  }).join('\n');
+}
 function exportBlock(b) {
-  const groups = new Map();
+  const groups = new Map(), i = idxOf(b.id);
   DEVS.forEach(d => {
     const e = eff(b, d); if (e._hide) return;
-    const key = renderBlock({ ...b, p: { ...e, _id: '' } }, false);
-    if (!groups.has(key)) groups.set(key, { e, devs: [] });
+    const ctx = ctxOf(i, d);
+    const key = renderBlock({ ...b, p: { ...e, _id: '' } }, false, '', ctx);
+    if (!groups.has(key)) groups.set(key, { e, ctx, devs: [] });
     groups.get(key).devs.push(d);
   });
   if (!groups.size) return '';
-  if (groups.size === 1 && [...groups.values()][0].devs.length === 3) return renderBlock({ ...b, p: [...groups.values()][0].e }, false);
+  if (groups.size === 1 && [...groups.values()][0].devs.length === 3) { const g = [...groups.values()][0]; return renderBlock({ ...b, p: g.e }, false, '', g.ctx); }
   const id = b.p._id, multi = groups.size > 1;
-  const out = [...groups.values()].map(({ e, devs }) => renderBlock(
+  const out = [...groups.values()].map(({ e, ctx, devs }) => renderBlock(
     { ...b, id: b.id + (multi ? '-' + devs.map(d => DEV_S[d]).join('') : ''), p: { ...e, _id: multi ? '' : e._id } }, false,
-    'wk-only ' + devs.map(d => 'wk-on-' + DEV_S[d].toLowerCase()).join(' '))).join('\n');
+    'wk-only ' + devs.map(d => 'wk-on-' + DEV_S[d].toLowerCase()).join(' '), ctx)).join('\n');
   return multi && id && b.type !== 'navbar' ? `<div id="${esc(id)}">\n${out}\n</div>` : out;
 }
 const slug = s => (s || 'weboldal').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'weboldal';
@@ -607,9 +671,13 @@ $('#btnNew').onclick = () => openModal(`<div class="m-h">Új oldal – válassz 
 <p class="m-note">A jelenlegi oldal lecserélődik – a Ctrl+Z visszahozza.</p>`);
 $('#btnHelp').onclick = () => openModal(`<div class="m-h">Hogyan működik?<button data-m="x">✕</button></div><div class="m-body">
 <p><b>1. Blokkok</b> – húzd a bal oldali modulokat az oldalra, vagy kattints rájuk. A vásznon a blokk jobb felső sarkában: áthelyezés ⠿, fel/le, duplikálás, törlés.</p>
-<p><b>2. Paraméterezés</b> – kattints egy blokkra: jobb oldalt megjelennek a beállításai (szövegek, képek, színek, oszlopok, térköz, listaelemek). Üres területre kattintva az <i>oldal beállításait</i> látod (betűtípus, színpaletta, SEO).</p>
+<p><b>2. Paraméterezés</b> – kattints egy blokkra: jobb oldalt megjelennek a beállításai (szövegek, képek, színek, oszlopok, térköz, listaelemek). Üres területre kattintva az <i>oldal beállításait</i> látod (3 alapszín, betűtípus, SEO).</p>
 <p><b>3. Közvetlen szerkesztés</b> – a szövegekre kattintva helyben is átírhatod őket.</p>
 <p><b>4. Nézetek</b> – fent válthatsz asztali / tablet / mobil nézet között. A <b>tartalom</b> (szövegek, képek, linkek, listaelemek, blokkok hozzáadása/törlése/sorrendje) mindig <b>minden nézetben közös</b>. A <b>megjelenés</b> (igazítás, oszlopok, elrendezés, színek, térközök, elrejtés) nézetenként is állítható: <b style="color:#9d86ff">🔗 Minden nézet</b> – mindhárom nézetben változik; <b style="color:#f59e0b">📌 Csak ez a nézet</b> – csak az aktuálisban (narancs jelzi). Az eltérő mezők mellett <b>D/T/M</b> jelölés, a ↺ visszaállítja a közös értékre. Pl. asztalin balra, mobilon középre igazított ikonok. Billentyű: <kbd>L</kbd></p>
+<p><b>Animáció</b> – blokk → Megjelenés → Animáció: típus (beúszás, előtűnés, nagyítás, billenés), időtartam, késleltetés, lépcsőzetes megjelenés. ▶ Lejátszás: kipróbálás. Minden blokkra egyszerre: Oldal beállítások → Animáció minden blokkra.</p>
+<p><b>Ikonok</b> – a Szolgáltatások elemeinél a <i>Választás…</i> gomb: emoji vagy rajzolt ikon (a rajzolt ikon a fő színt veszi fel). Emojit be is írhatsz. <b>Közösségi ikonok</b>: menüsor, kapcsolat és lábléc blokk → Közösségi oldalak.</p>
+<p><b>Blokkok összekapcsolása</b> – Megjelenés → Háttér: <i>Folytatja az előző blokk hátterét</i> (több blokk egy közös háttéren). Határ a szomszéd blokkokkal: formázott határvonal (hullám, ív, ferde, csúcs, cikcakk), lágy átmenet, átlógás.</p>
+<p><b>🎲 Random téma</b> – véletlen, de összeillő színek, betűtípusok, lekerekítés, térközök, elrendezés és animáció. A tartalom nem változik. Nyomd többször; <kbd>Ctrl/⌘ Z</kbd> visszahozza az előzőt.</p>
 <p><b>Horgonyok (menüből ugrás egy szakaszra)</b> – a blokk <i>Horgony (ID)</i> mezőjébe: <code>rolunk</code> (# nélkül), a menüpont linkjébe: <code>#rolunk</code> – a link mezőben legördülő listából is választhatsz. A szerkesztőben a linkek nem ugranak el (hogy a feliratot átírhasd); kipróbálni <kbd>Ctrl/⌘</kbd> + kattintással vagy az Előnézetben lehet.</p>
 <p><b>5. Export</b> – a <i>HTML export</i> egyetlen önálló <code>index.html</code>-t ad, amit bármilyen tárhelyre feltölthetsz (Netlify, GitHub Pages, saját tárhely). A <i>Mentés</i> projekt fájlt készít, amit később újra megnyithatsz.</p>
 <p><kbd>Ctrl/⌘ Z</kbd> visszavonás · <kbd>Ctrl/⌘ Shift Z</kbd> újra · <kbd>Ctrl/⌘ D</kbd> duplikálás · <kbd>Del</kbd> törlés · <kbd>Alt ↑/↓</kbd> mozgatás · <kbd>Esc</kbd> kijelölés megszüntetése · <kbd>Ctrl/⌘ S</kbd> projekt mentése</p>
@@ -654,11 +722,104 @@ document.addEventListener('keydown', e => {
   else if (mod && k === 'y') { e.preventDefault(); redo(); }
   else if (mod && k === 'd' && sel) { e.preventDefault(); dupBlock(sel); }
   else if ((e.key === 'Delete' || e.key === 'Backspace') && sel) { e.preventDefault(); delBlock(sel); }
-  else if (e.key === 'Escape') select(null);
+  else if (e.key === 'Escape') { if (!picker.hidden) picker.hidden = true; else select(null); }
   else if (k === 'l' && !mod) setScope(scope === 'all' ? 'only' : 'all');
   else if (e.altKey && sel && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) { e.preventDefault(); moveBlock(sel, idxOf(sel) + (e.key === 'ArrowUp' ? -1 : 1)); }
 });
 $('#stage').addEventListener('click', e => { if (e.target.id === 'stage') select(null); });
+
+/* ---------------- animáció előnézet a vásznon ---------------- */
+function playAnim(id) {
+  const sec = page.querySelector(`.ed-block[data-id="${id}"] > .wk-b`);
+  if (!sec || !sec.dataset.anim) return;
+  const n = wkAnimIdx(sec), cs = getComputedStyle(sec);
+  const total = parseFloat(cs.getPropertyValue('--wk-ad')) + parseFloat(cs.getPropertyValue('--wk-dl')) + (sec.hasAttribute('data-st') ? n * 110 : 0);
+  clearTimeout(sec._t);
+  sec.classList.remove('wk-vis'); sec.classList.add('wk-prev');
+  void sec.offsetWidth;
+  requestAnimationFrame(() => requestAnimationFrame(() => sec.classList.add('wk-vis')));
+  sec._t = setTimeout(() => sec.classList.remove('wk-prev', 'wk-vis'), total + 400);
+}
+
+/* ---------------- ikonválasztó ---------------- */
+const picker = $('#picker');
+let pickPath = null, pickTab = 'emoji';
+function openPicker(path, anchor) {
+  pickPath = path;
+  const r = anchor.getBoundingClientRect();
+  picker.hidden = false;
+  picker.style.top = Math.max(8, Math.min(r.bottom + 6, innerHeight - 430)) + 'px';
+  picker.style.left = Math.max(8, Math.min(r.left - 200, innerWidth - 360)) + 'px';
+  renderPicker();
+}
+function renderPicker(q = '') {
+  const cur = getPath(currentTarget() || {}, pickPath) || '';
+  const items = pickTab === 'emoji'
+    ? EMOJIS.map(e => `<button type="button" data-ico="${e}" class="${cur === e ? 'on' : ''}">${e}</button>`)
+    : Object.entries(ICONS).filter(([k, v]) => !q || (k + ' ' + v.n).includes(q.toLowerCase()))
+      .map(([k, v]) => `<button type="button" data-ico="i:${k}" title="${v.n.split(' ')[0]}" class="${cur === 'i:' + k ? 'on' : ''}">${svg(v.d)}</button>`);
+  picker.innerHTML = `<div class="pk-h"><div class="pk-tabs"><button type="button" data-tab="emoji" class="${pickTab === 'emoji' ? 'on' : ''}">😊 Emoji</button><button type="button" data-tab="icons" class="${pickTab === 'icons' ? 'on' : ''}">✎ Rajzolt ikonok</button></div><button type="button" data-pkclose title="Bezárás">✕</button></div>
+${pickTab === 'icons' ? `<input class="pk-q" placeholder="Keresés: telefon, cím, szív…" value="${esc(q)}">` : '<div class="pk-note">Bármilyen emojit be is írhatsz a mezőbe (Mac: Ctrl+⌘+Szóköz).</div>'}
+<div class="pk-grid ${pickTab}">${items.join('') || '<div class="pk-note">Nincs találat</div>'}</div>
+<div class="pk-f"><button type="button" data-ico="">Ikon nélkül</button><small>A rajzolt ikonok a fő színt veszik fel.</small></div>`;
+  if (pickTab === 'icons') { const i = $('.pk-q', picker); i.focus(); i.setSelectionRange(q.length, q.length); }
+}
+picker.addEventListener('input', e => { if (e.target.matches('.pk-q')) renderPicker(e.target.value); });
+picker.addEventListener('click', e => {
+  const t = e.target;
+  if (t.closest('[data-pkclose]')) { picker.hidden = true; return; }
+  const tab = t.closest('[data-tab]'); if (tab) { pickTab = tab.dataset.tab; renderPicker(); return; }
+  const it = t.closest('[data-ico]'); if (!it) return;
+  const v = it.dataset.ico;
+  setField(pickPath, v);
+  const inp = insp.querySelector(`[data-path="${pickPath}"]`);
+  if (inp) { inp.value = v; inp.parentElement.querySelector('.ico-prev').innerHTML = v ? icoHTML(v) : '＋'; }
+  picker.hidden = true;
+});
+document.addEventListener('mousedown', e => { if (!picker.hidden && !picker.contains(e.target) && !e.target.closest('[data-pick]')) picker.hidden = true; });
+
+/* ---------------- 🎲 random téma ----------------
+   Véletlen, de összeillő: egy alapszínből számolt paletta, betűpár, lekerekítés, térköz,
+   váltakozó szekció háttér, blokk elrendezések és egységes animáció. A tartalom nem változik. */
+const FONT_PAIRS = [['Inter', ''], ['Poppins', ''], ['DM Sans', 'Space Grotesk'], ['Open Sans', 'Montserrat'], ['Lato', 'Playfair Display'],
+  ['Nunito', ''], ['Raleway', 'Merriweather'], ['Roboto', 'Montserrat'], ['Inter', 'Playfair Display'], ['Montserrat', ''], ['Open Sans', 'Raleway']];
+const rnd = a => a[Math.floor(Math.random() * a.length)];
+const rint = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+function hsl(h, s, l) {
+  s /= 100; l /= 100;
+  const k = n => (n + h / 30) % 12, a = s * Math.min(l, 1 - l);
+  const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1));
+  return '#' + [f(0), f(8), f(4)].map(x => Math.round(x * 255).toString(16).padStart(2, '0')).join('');
+}
+function randomTheme() {
+  snap();
+  const h = rint(0, 359), dark = Math.random() < .2, [font, headFont] = rnd(FONT_PAIRS);
+  Object.assign(S.page, dark
+    ? { primary: hsl(h, rint(70, 90), rint(60, 68)), text: hsl(h, 14, 90), bg: hsl(h, rint(18, 30), rint(6, 9)) }
+    : { primary: hsl(h, rint(65, 88), rint(40, 50)), text: hsl(h, rint(20, 35), rint(10, 16)), bg: Math.random() < .5 ? '#ffffff' : hsl(h, rint(25, 45), rint(97, 99)) },
+    { font, headFont, radius: rnd([0, 4, 8, 12, 16, 24]) });
+  for (let l = 48; !dark && contrast(S.page.primary, S.page.bg) < 3.6 && l > 20; l -= 3) S.page.primary = hsl(h, 80, l);
+  const tint = dark ? hsl(h, rint(18, 28), rint(10, 13)) : hsl(h, rint(30, 55), rint(94, 97));
+  const alt = rnd([0, 1, -1]), pad = rnd([72, 88, 104, 120]);
+  const anim = rnd(['none', 'up', 'up', 'fade', 'zoom', 'left', 'flip']), heroAlign = rnd(['center', 'left']), soc = rnd(['plain', 'circle', 'square']);
+  let right = Math.random() < .5, k = 0;
+  S.blocks.forEach(b => {
+    const p = b.p, t = b.type;
+    if (!['navbar', 'hero', 'cta', 'footer', 'spacer', 'html'].includes(t)) { p._pt = p._pb = pad; if (p._bgType !== 'image') p._bgType = 'color'; p._bg = alt >= 0 && k++ % 2 === alt ? tint : ''; p._fg = ''; }
+    if (t === 'hero') Object.assign(p, { align: heroAlign, _bgOv: rint(35, 70), _bgOvC: Math.random() < .3 ? hsl(h, 60, 12) : '', height: rnd([70, 80, 90]) });
+    if (t === 'hero') Object.assign(p, { _divBot: rnd(['none', 'none', 'wave', 'curve', 'slant', 'arc']), _divBotH: rnd([48, 64, 80, 100]), _divBotC: '' });
+    if (t === 'cta') Object.assign(p, Math.random() < .5 ? { _bgType: 'gradient', _gKind: rnd(['linear', 'linear', 'radial']), _g1: '', _g2: '', _gAng: rnd([90, 120, 135, 160, 200]), _gMid: rint(35, 65) } : { _bgType: 'color', _bg: '' });
+    if (t === 'features') Object.assign(p, { look: rnd(['card', 'plain']), align: rnd(['left', 'center']) });
+    if (t === 'imageText') { p.imgPos = right ? 'right' : 'left'; right = !right; }
+    if (t === 'gallery') p.ratio = rnd(['1/1', '4/3', '3/4', '16/9']);
+    if ('socStyle' in p) p.socStyle = soc;
+    if (t !== 'navbar') p._anim = anim;
+  });
+  applyPage(); renderCanvas(); renderInspector(); save();
+  if (anim !== 'none') S.blocks.forEach(b => playAnim(b.id));
+  toast(`🎲 Új téma: <b>${font}${headFont ? ' + ' + headFont : ''}</b> · ${dark ? 'sötét' : 'világos'} – nyomd újra egy másikért, Ctrl+Z visszahozza az előzőt`);
+}
+$('#btnRandom').onclick = randomTheme;
 
 /* ---------------- toast ---------------- */
 function toast(html, type = '') {

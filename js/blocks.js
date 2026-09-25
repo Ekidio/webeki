@@ -14,15 +14,80 @@ const ytId = u => (String(u || '').match(/(?:youtu\.be\/|[?&]v=|embed\/|shorts\/
    - TARTALOM (text, textarea, html, image, list, …): mindig minden nézetben közös
    - MEGJELENÉS (select, range, color + a:1 jelölésű mezők): nézetenként külön állítható */
 /* ---- közös mezők, minden blokkban a "Stílus & térköz" szekcióban ---- */
+const isG = p => !p._bgLink && p._bgType === 'gradient', isI = p => !p._bgLink && p._bgType === 'image';
+/* határvonal formák: a 1200×100-as dobozban a SZOMSZÉD blokk színével kitöltött rész */
+const SHAPES = {
+  wave: 'M0 55C150 95 350 95 600 55S1050 15 1200 55V100H0Z',
+  waves: 'M0 60C100 90 200 90 300 60S500 30 600 60 800 90 900 60 1100 30 1200 60V100H0Z',
+  slant: 'M0 100L1200 0V100Z',
+  curve: 'M0 100Q600 -60 1200 100Z',
+  arc: 'M0 0Q600 160 1200 0V100H0Z',
+  peak: 'M0 100L600 0L1200 100Z',
+  zigzag: 'M0 100' + Array.from({ length: 25 }, (_, i) => `L${i * 50} ${i % 2 ? 25 : 75}`).join('') + 'L1200 100Z',
+};
+const DIVIDERS = [['none', 'Nincs (egyenes)'], ['wave', 'Hullám'], ['waves', 'Hullámok (sűrű)'], ['slant', 'Ferde'], ['curve', 'Ív (domború)'], ['arc', 'Ív (homorú)'], ['peak', 'Csúcs'], ['zigzag', 'Cikcakk']];
+/* blokk alap háttérszíne, ha nincs megadva (a CSS alapértékeivel egyezően) */
+const BG_DEFAULT = { cta: 'var(--wk-primary)', footer: 'color-mix(in srgb,var(--wk-text) 94%,var(--wk-bg))', hero: '#111827', testimonials: 'color-mix(in srgb,var(--wk-primary) 6%,var(--wk-bg))', navbar: 'var(--wk-bg)' };
+const FG_DEFAULT = { cta: 'var(--wk-onp,#fff)', hero: '#fff', footer: 'var(--wk-bg)' };
+/* egy blokk "széle" milyen színű – ehhez igazodik a szomszéd határvonala és lágy átmenete */
+function bgColorOf(p, type) {
+  if (p._bgType === 'gradient') return p._g2 || 'color-mix(in srgb,var(--wk-primary) 45%,#000)';
+  return p._bg || BG_DEFAULT[type] || (p._bgType === 'image' ? '#111827' : 'var(--wk-bg)');
+}
+/* összefüggő háttér csoport burkolója: a vezető blokk háttere a teljes csoporton */
+function groupStyle(p, type) {
+  return `background-color:${p._bgType === 'gradient' ? 'transparent' : (p._bg || BG_DEFAULT[type] || 'transparent')};color:${p._fg || FG_DEFAULT[type] || 'inherit'};${bgStyle(p)}`;
+}
 const COMMON_FIELDS = [
-  { k: '_bg', t: 'color', l: 'Háttérszín' },
+  { t: 'head', a: 1, l: 'Háttér' },
+  { k: '_bgLink', t: 'check', sec: 'look', re: 1, l: 'Folytatja az előző blokk hátterét', hint: 'a két blokk egy közös hátteret kap, ami egyben fut végig rajtuk (minden nézetben)' },
+  { t: 'note', sec: 'look', when: p => p._bgLink, l: 'A háttér a csoport első blokkjából folytatódik – ott állíthatod.', btn: 'Ugrás a csoport első blokkjához', act: 'goleader' },
+  { k: '_bgType', t: 'select', l: 'Háttér típusa', re: 1, when: p => !p._bgLink, o: [['color', 'Szín'], ['gradient', 'Színátmenet (gradiens)'], ['image', 'Kép']] },
+  { k: '_bg', t: 'color', l: 'Háttérszín', when: p => !p._bgLink && p._bgType !== 'gradient' },
+  { k: '_gKind', t: 'select', l: 'Átmenet formája', re: 1, when: isG, o: [['linear', 'Egyenes (szöggel forgatható)'], ['radial', 'Kör alakú (középről kifelé)']] },
+  { k: '_g1', t: 'color', l: '1. szín', when: isG, ph: 'fő szín' },
+  { k: '_g2', t: 'color', l: '2. szín', when: isG, ph: 'fő szín sötétebb' },
+  { k: '_gMid', t: 'range', l: 'Arány (hol vált át a két szín)', min: 5, max: 95, unit: '%', when: isG },
+  { k: '_gAng', t: 'range', l: 'Forgatás (szög)', min: 0, max: 360, step: 5, unit: '°', when: p => isG(p) && p._gKind !== 'radial' },
+  { k: '_bgImg', t: 'image', a: 1, l: 'Háttérkép', when: isI },
+  { k: '_bgFit', t: 'select', l: 'Kép mérete', re: 1, when: isI, o: [['cover', 'Kitölti a blokkot (vágással)'], ['fitw', 'Szélességre illesztve'], ['fith', 'Magasságra illesztve'], ['orig', 'Eredeti méret']] },
+  { k: '_bgX', t: 'range', l: 'Vízszintes pozíció (bal ↔ jobb)', min: 0, max: 100, unit: '%', when: isI },
+  { k: '_bgY', t: 'range', l: 'Függőleges pozíció (fent ↔ lent)', min: 0, max: 100, unit: '%', when: isI },
+  { k: '_bgRep', t: 'check', a: 1, l: 'Ismétlés (csempézve)', when: p => isI(p) && p._bgFit !== 'cover' },
+  { k: '_bgFix', t: 'check', a: 1, l: 'Rögzített kép görgetéskor (parallax hatás)', when: isI },
+  { k: '_bgOvC', t: 'color', l: 'Fedőszín a képen', when: isI, ph: 'fekete' },
+  { k: '_bgOv', t: 'range', l: 'Fedőszín erőssége', min: 0, max: 90, unit: '%', when: isI },
+  { t: 'head', a: 1, l: 'Határ a szomszéd blokkokkal' },
+  { k: '_divTop', t: 'select', l: 'Felső határvonal', re: 1, o: DIVIDERS },
+  { k: '_divTopH', t: 'range', l: 'Felső határvonal magassága', min: 16, max: 240, step: 4, unit: 'px', when: p => p._divTop !== 'none' },
+  { k: '_divTopF', t: 'check', a: 1, l: 'Felső határvonal tükrözése', when: p => p._divTop !== 'none' },
+  { k: '_divTopC', t: 'color', l: 'Felső határvonal színe', ph: 'az előző blokk színe', when: p => p._divTop !== 'none' },
+  { k: '_divBot', t: 'select', l: 'Alsó határvonal', re: 1, o: DIVIDERS },
+  { k: '_divBotH', t: 'range', l: 'Alsó határvonal magassága', min: 16, max: 240, step: 4, unit: 'px', when: p => p._divBot !== 'none' },
+  { k: '_divBotF', t: 'check', a: 1, l: 'Alsó határvonal tükrözése', when: p => p._divBot !== 'none' },
+  { k: '_divBotC', t: 'color', l: 'Alsó határvonal színe', ph: 'a következő blokk színe', when: p => p._divBot !== 'none' },
+  { k: '_fadeTop', t: 'range', l: 'Lágy átmenet az előző blokkból', min: 0, max: 400, step: 10, unit: 'px', re: 1 },
+  { k: '_fadeC', t: 'color', l: 'Átmenet színe', ph: 'az előző blokk színe', when: p => p._fadeTop > 0 },
+  { k: '_pull', t: 'range', l: 'Átlógás: tartalom felcsúsztatása az előző blokkba', min: 0, max: 300, step: 4, unit: 'px' },
+  { t: 'head', a: 1, l: 'Szöveg és térköz' },
   { k: '_fg', t: 'color', l: 'Szövegszín' },
   { k: '_pt', t: 'range', l: 'Felső térköz', min: 0, max: 240, step: 4, unit: 'px' },
   { k: '_pb', t: 'range', l: 'Alsó térköz', min: 0, max: 240, step: 4, unit: 'px' },
   { k: '_id', t: 'text', l: 'Horgony (ID)', hint: 'ide # nélkül: rolunk → a menüpont linkje: #rolunk' },
   { k: '_hide', t: 'check', a: 1, l: 'Blokk elrejtése', hint: 'pl. „Csak Mobil” módban: csak mobilon rejtett' },
+  { t: 'head', a: 1, l: 'Animáció', play: 1 },
+  { k: '_anim', t: 'select', l: 'Animáció', re: 1, o: [['none', 'Kikapcsolva'], ['up', 'Beúszás alulról'], ['down', 'Beúszás felülről'], ['left', 'Beúszás balról'], ['right', 'Beúszás jobbról'], ['fade', 'Előtűnés'], ['zoom', 'Nagyítás'], ['flip', 'Billenés']] },
+  { k: '_animDur', t: 'range', l: 'Időtartam', min: 200, max: 2000, step: 50, unit: 'ms', when: p => p._anim !== 'none' },
+  { k: '_animDelay', t: 'range', l: 'Késleltetés', min: 0, max: 1500, step: 50, unit: 'ms', when: p => p._anim !== 'none' },
+  { k: '_animSt', t: 'check', a: 1, l: 'Elemek egymás után (lépcsőzetesen)', when: p => p._anim !== 'none' },
+  { k: '_animRep', t: 'check', a: 1, l: 'Ismétlés minden odagörgetéskor', when: p => p._anim !== 'none' },
 ];
-const COMMON_DEFAULTS = { _bg: '', _fg: '', _pt: 96, _pb: 96, _id: '', _hide: false };
+const COMMON_DEFAULTS = {
+  _bgLink: false, _divTop: 'none', _divTopH: 80, _divTopF: false, _divTopC: '', _divBot: 'none', _divBotH: 80, _divBotF: false, _divBotC: '',
+  _fadeTop: 0, _fadeC: '', _pull: 0,
+  _bgType: 'color', _gKind: 'linear', _g1: '', _g2: '', _gMid: 50, _gAng: 135,
+  _bgImg: '', _bgFit: 'cover', _bgX: 50, _bgY: 50, _bgRep: false, _bgFix: false, _bgOvC: '', _bgOv: 0,
+  _bg: '', _fg: '', _pt: 96, _pb: 96, _id: '', _hide: false, _anim: 'none', _animDur: 700, _animDelay: 0, _animSt: true, _animRep: false };
 
 /* ---- gyakori mezők ---- */
 const F = {
@@ -40,6 +105,18 @@ const head = (p, E, center = true) => (p.title || p.subtitle)
   : '';
 /* rács oszlop osztály; ha az oszlopszám nézetenként felül van írva (fx), a reszponzív szabály nem írja felül */
 const gc = p => 'c' + p.cols + (p._ov && 'cols' in p._ov ? ' fx' : '');
+/* közösségi ikonok mezői és HTML-je (menüsor, kapcsolat, lábléc) */
+F.social = [
+  { k: 'social', t: 'list', l: 'Közösségi oldalak', addL: 'Új közösségi oldal', item: { net: 'instagram', url: 'https://instagram.com/' },
+    lab: it => (SOCIAL[it.net] || {}).n || 'Közösségi oldal',
+    fields: [{ k: 'net', t: 'select', l: 'Oldal', o: Object.entries(SOCIAL).map(([k, v]) => [k, v.n]) }, { k: 'url', t: 'text', l: 'Link (a profilod címe)' }] },
+  { k: 'socStyle', t: 'select', l: 'Közösségi ikonok stílusa', o: [['plain', 'Csak ikon'], ['circle', 'Kör alapon'], ['square', 'Négyzet alapon']] },
+];
+const SOC = (...nets) => nets.map(net => ({ net, url: { facebook: 'https://facebook.com/', instagram: 'https://instagram.com/', youtube: 'https://youtube.com/', tiktok: 'https://tiktok.com/' }[net] || '#' }));
+const socialHTML = p => {
+  const list = (p.social || []).filter(s => SOCIAL[s.net]);
+  return list.length ? `<div class="wk-social ${p.socStyle || 'plain'}">${list.map(s => `<a href="${esc(s.url || '#')}" target="_blank" rel="noopener" aria-label="${SOCIAL[s.net].n}" title="${SOCIAL[s.net].n}">${svg(SOCIAL[s.net].d)}</a>`).join('')}</div>` : '';
+};
 const btn = (p, E, k, cls = '') => p[k + 'Text']
   ? `<a class="wk-btn ${cls}" href="${esc(p[k + 'Href'] || '#')}"${E(k + 'Text')}>${esc(p[k + 'Text'])}</a>` : '';
 
@@ -56,16 +133,17 @@ const BLOCKS = {
         fields: [{ k: 'label', t: 'text', l: 'Felirat' }, { k: 'href', t: 'text', l: 'Link', hint: 'válassz a listából (#rolunk) vagy https://… – a vásznon Ctrl/⌘+kattintással kipróbálható' }] },
       ...F.btn('btn', 'Gomb'),
       { k: 'sticky', t: 'check', a: 1, l: 'Görgetéskor fent marad (sticky)' },
+      ...F.social,
     ],
     defaults: {
-      _pt: 18, _pb: 18, logo: 'WEBEKI', logoImg: '', sticky: true, btnText: 'Kapcsolat', btnHref: '#kapcsolat',
+      _pt: 18, _pb: 18, logo: 'WEBEKI', logoImg: '', sticky: true, btnText: 'Kapcsolat', btnHref: '#kapcsolat', social: [], socStyle: 'plain',
       links: [{ label: 'Szolgáltatások', href: '#szolgaltatasok' }, { label: 'Rólunk', href: '#rolunk' }, { label: 'Árak', href: '#arak' }, { label: 'GYIK', href: '#gyik' }],
     },
     cls: p => p.sticky ? 'sticky' : '',
     render: (p, E, b) => `<div class="wk-in wk-nav-row">
 <a class="wk-logo" href="#">${p.logoImg ? `<img src="${esc(p.logoImg)}" alt="">` : ''}${p.logo ? `<span${E('logo')}>${esc(p.logo)}</span>` : ''}</a>
 <input type="checkbox" id="nt-${b.id}" class="wk-nt"><label for="nt-${b.id}" class="wk-burger" aria-label="Menü"><span></span></label>
-<div class="wk-links">${p.links.map((l, i) => `<a href="${esc(l.href)}"${E(`links.${i}.label`)}>${esc(l.label)}</a>`).join('')}${btn(p, E, 'btn', 'sm')}</div>
+<div class="wk-links">${p.links.map((l, i) => `<a href="${esc(l.href)}"${E(`links.${i}.label`)}>${esc(l.label)}</a>`).join('')}${socialHTML(p)}${btn(p, E, 'btn', 'sm')}</div>
 </div>`,
   },
 
@@ -75,17 +153,15 @@ const BLOCKS = {
       { k: 'title', t: 'textarea', l: 'Főcím', rows: 2 },
       { k: 'text', t: 'textarea', l: 'Bevezető szöveg' },
       ...F.btn('btn1', 'Fő gomb'), ...F.btn('btn2', 'Második gomb'),
-      { k: 'img', t: 'image', l: 'Háttérkép' },
-      { k: 'overlay', t: 'range', l: 'Sötétítés a képen', min: 0, max: 90, unit: '%' },
       { k: 'align', t: 'select', l: 'Igazítás', o: [['center', 'Középre'], ['left', 'Balra']] },
       { k: 'height', t: 'range', l: 'Min. magasság', min: 0, max: 100, unit: 'vh' },
     ],
     defaults: {
       _pt: 140, _pb: 140, title: 'Építs weboldalt\nkódolás nélkül', text: 'Rakd össze az oldaladat kész blokkokból, kattints bármire és írd át. Egyszerű, gyors és teljesen ingyenes.',
       btn1Text: 'Kezdjük el', btn1Href: '#szolgaltatasok', btn2Text: 'Tudj meg többet', btn2Href: '#rolunk',
-      img: IMG('webeki-hero', 1920, 1100), overlay: 55, align: 'center', height: 80,
+      _bgType: 'image', _bgImg: IMG('webeki-hero', 1920, 1100), _bgOv: 55, align: 'center', height: 80,
     },
-    style: p => { const o = p.overlay / 100; return `background-image:linear-gradient(rgba(0,0,0,${o}),rgba(0,0,0,${o}))${p.img ? `,url("${p.img}")` : ''};min-height:${p.height}vh`; },
+    style: p => `min-height:${p.height}vh`,
     render: (p, E) => `<div class="wk-in ${p.align}">
 <h1 class="wk-h1"${E('title', 1)}>${nl(p.title)}</h1>
 ${p.text ? `<p class="wk-lead"${E('text', 1)}>${nl(p.text)}</p>` : ''}
@@ -100,7 +176,7 @@ ${p.text ? `<p class="wk-lead"${E('text', 1)}>${nl(p.text)}</p>` : ''}
       { k: 'look', t: 'select', l: 'Kártya stílus', o: [['card', 'Kártya'], ['plain', 'Egyszerű']] },
       { k: 'align', t: 'select', l: 'Igazítás', o: [['left', 'Balra'], ['center', 'Középre']] },
       { k: 'items', t: 'list', l: 'Elemek', addL: 'Új elem', item: { icon: '⭐', title: 'Új elem', text: 'Rövid leírás.' },
-        fields: [{ k: 'icon', t: 'text', l: 'Ikon (emoji vagy karakter)' }, { k: 'title', t: 'text', l: 'Cím' }, { k: 'text', t: 'textarea', l: 'Szöveg' }] },
+        fields: [{ k: 'icon', t: 'icon', l: 'Ikon (emoji vagy rajzolt ikon)' }, { k: 'title', t: 'text', l: 'Cím' }, { k: 'text', t: 'textarea', l: 'Szöveg' }] },
     ],
     defaults: {
       _id: 'szolgaltatasok', title: 'Mit kapsz tőlünk?', subtitle: 'Minden, ami egy modern, gyors weboldalhoz kell.', cols: '3', look: 'card', align: 'left',
@@ -111,7 +187,7 @@ ${p.text ? `<p class="wk-lead"${E('text', 1)}>${nl(p.text)}</p>` : ''}
       ],
     },
     cls: p => p.align === 'center' ? 'center' : '',
-    render: (p, E) => `<div class="wk-in">${head(p, E)}<div class="wk-grid ${gc(p)}">${p.items.map((it, i) => `<div class="wk-card${p.look === 'plain' ? ' plain' : ''}">${it.icon ? `<div class="wk-ico"${E(`items.${i}.icon`)}>${esc(it.icon)}</div>` : ''}<h3 class="wk-h3"${E(`items.${i}.title`)}>${esc(it.title)}</h3><p${E(`items.${i}.text`, 1)}>${nl(it.text)}</p></div>`).join('')}</div></div>`,
+    render: (p, E) => `<div class="wk-in">${head(p, E)}<div class="wk-grid ${gc(p)}">${p.items.map((it, i) => `<div class="wk-card${p.look === 'plain' ? ' plain' : ''}">${it.icon ? `<div class="wk-ico"${/^i:/.test(it.icon) ? '' : E(`items.${i}.icon`)}>${icoHTML(it.icon)}</div>` : ''}<h3 class="wk-h3"${E(`items.${i}.title`)}>${esc(it.title)}</h3><p${E(`items.${i}.text`, 1)}>${nl(it.text)}</p></div>`).join('')}</div></div>`,
   },
 
   imageText: {
@@ -261,14 +337,14 @@ ${p.text ? `<p class="wk-lead"${E('text', 1)}>${nl(p.text)}</p>` : ''}
       { k: 'form', t: 'check', l: 'Űrlap megjelenítése' },
       { k: 'action', t: 'text', l: 'Űrlap küldési cím', hint: 'pl. Formspree URL. Üresen: e-mail kliens nyílik meg' },
       { k: 'btnText', t: 'text', l: 'Küldés gomb felirat' },
-      { k: 'map', t: 'check', l: 'Térkép megjelenítése (a fenti cím alapján)' }],
+      { k: 'map', t: 'check', l: 'Térkép megjelenítése (a fenti cím alapján)' }, ...F.social],
     defaults: {
       _id: 'kapcsolat', title: 'Lépj kapcsolatba velünk', text: 'Kérdésed van? Írj nekünk, 24 órán belül válaszolunk.',
-      email: 'hello@pelda.hu', phone: '+36 30 123 4567', address: 'Budapest, Andrássy út 1.', form: true, action: '', btnText: 'Üzenet küldése', map: false,
+      email: 'hello@pelda.hu', phone: '+36 30 123 4567', address: 'Budapest, Andrássy út 1.', form: true, action: '', btnText: 'Üzenet küldése', social: SOC('facebook', 'instagram'), socStyle: 'circle', map: false,
     },
     render: (p, E) => `<div class="wk-in wk-split">
 <div><h2 class="wk-h2"${E('title')}>${esc(p.title)}</h2>${p.text ? `<p class="wk-txt"${E('text', 1)}>${nl(p.text)}</p>` : ''}
-<div class="wk-ci">${p.email ? `<a href="mailto:${esc(p.email)}"><span>✉</span>${esc(p.email)}</a>` : ''}${p.phone ? `<a href="tel:${esc(p.phone.replace(/\s/g, ''))}"><span>☏</span>${esc(p.phone)}</a>` : ''}${p.address ? `<div><span>⌂</span>${esc(p.address)}</div>` : ''}</div></div>
+<div class="wk-ci">${p.email ? `<a href="mailto:${esc(p.email)}"><span>${svg(ICONS.mail.d)}</span>${esc(p.email)}</a>` : ''}${p.phone ? `<a href="tel:${esc(p.phone.replace(/\s/g, ''))}"><span>${svg(ICONS.phone.d)}</span>${esc(p.phone)}</a>` : ''}${p.address ? `<div><span>${svg(ICONS.pin.d)}</span>${esc(p.address)}</div>` : ''}</div>${socialHTML(p)}</div>
 ${p.form ? `<form class="wk-form" action="${esc(p.action || 'mailto:' + p.email)}" method="post"${p.action ? '' : ' enctype="text/plain"'}>
 <input name="nev" placeholder="Neved" required><input name="email" type="email" placeholder="E-mail címed" required><textarea name="uzenet" placeholder="Üzeneted" required></textarea>
 <button class="wk-btn" type="submit">${esc(p.btnText || 'Küldés')}</button></form>` : '<div></div>'}
@@ -282,14 +358,15 @@ ${p.form ? `<form class="wk-form" action="${esc(p.action || 'mailto:' + p.email)
     fields: [{ k: 'logo', t: 'text', l: 'Logó szöveg' }, { k: 'text', t: 'textarea', l: 'Rövid leírás' },
       { k: 'links', t: 'list', l: 'Linkek', addL: 'Új link', item: { label: 'Link', href: '#' },
         fields: [{ k: 'label', t: 'text', l: 'Felirat' }, { k: 'href', t: 'text', l: 'Link' }] },
-      { k: 'copy', t: 'text', l: 'Copyright sor' }],
+      { k: 'copy', t: 'text', l: 'Copyright sor' }, ...F.social],
     defaults: {
       _pt: 56, _pb: 32, logo: 'WEBEKI', text: 'Ingyenes, blokkos weboldal-építő.\nKészült szeretettel.',
-      links: [{ label: 'Adatvédelem', href: '#' }, { label: 'ÁSZF', href: '#' }, { label: 'Facebook', href: '#' }, { label: 'Instagram', href: '#' }],
+      links: [{ label: 'Adatvédelem', href: '#' }, { label: 'ÁSZF', href: '#' }, { label: 'Kapcsolat', href: '#kapcsolat' }],
+      social: SOC('facebook', 'instagram', 'youtube'), socStyle: 'circle',
       copy: '© ' + new Date().getFullYear() + ' WEBEKI. Minden jog fenntartva.',
     },
     render: (p, E) => `<div class="wk-in"><div class="wk-foot-row"><div><div class="wk-logo"${E('logo')}>${esc(p.logo)}</div>${p.text ? `<p class="wk-foot-t"${E('text', 1)}>${nl(p.text)}</p>` : ''}</div>
-<div class="wk-foot-links">${p.links.map((l, i) => `<a href="${esc(l.href)}"${E(`links.${i}.label`)}>${esc(l.label)}</a>`).join('')}</div></div>
+<div class="wk-foot-links">${p.links.map((l, i) => `<a href="${esc(l.href)}"${E(`links.${i}.label`)}>${esc(l.label)}</a>`).join('')}</div>${socialHTML(p)}</div>
 ${p.copy ? `<div class="wk-copy"${E('copy')}>${esc(p.copy)}</div>` : ''}</div>`,
   },
 
@@ -310,12 +387,81 @@ ${p.copy ? `<div class="wk-copy"${E('copy')}>${esc(p.copy)}</div>` : ''}</div>`,
 };
 
 /* ---- egy blokk HTML-je. edit=true: szerkesztőben (inline szerkeszthető mezők) ---- */
-function renderBlock(b, edit, extraCls = '') {
+/* háttér: szín / színátmenet / kép (fedőszínnel) */
+function hexA(hex, a) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex || '#000000') || [0, '000000'];
+  return `rgba(${[0, 2, 4].map(i => parseInt(m[1].substr(i, 2), 16)).join(',')},${a})`;
+}
+function bgStyle(p) {
+  if (p._bgType === 'gradient') {
+    const c1 = p._g1 || 'var(--wk-primary)', c2 = p._g2 || 'color-mix(in srgb,var(--wk-primary) 45%,#000)';
+    return `background-image:${p._gKind === 'radial' ? 'radial-gradient(circle at center' : `linear-gradient(${p._gAng}deg`},${c1},${p._gMid}%,${c2})`;
+  }
+  if (p._bgType === 'image' && p._bgImg) {
+    const ov = hexA(p._bgOvC, (p._bgOv || 0) / 100);
+    const size = { cover: 'cover', fitw: '100% auto', fith: 'auto 100%', orig: 'auto' }[p._bgFit] || 'cover';
+    const rep = p._bgRep && p._bgFit !== 'cover' ? 'repeat' : 'no-repeat';
+    return `background-image:linear-gradient(${ov},${ov}),url("${p._bgImg}");background-size:100% 100%,${size};background-repeat:no-repeat,${rep};background-position:0 0,${p._bgX}% ${p._bgY}%${p._bgFix ? ';background-attachment:scroll,fixed' : ''}`;
+  }
+  return '';
+}
+function renderBlock(b, edit, extraCls = '', ctx = {}) {
   const d = BLOCKS[b.type], p = b.p;
+  const divider = (pos, kind, h, flip, col) => kind && kind !== 'none' && SHAPES[kind]
+    ? `<div class="wk-sd ${pos}${flip ? ' f' : ''}" style="height:${h}px;color:${esc(col)}" aria-hidden="true"><svg viewBox="0 0 1200 100" preserveAspectRatio="none"><path fill="currentColor" d="${SHAPES[kind]}"/></svg></div>` : '';
+  const pre = (ctx.linkPrev ? '' : divider('t', p._divTop, p._divTopH, p._divTopF, p._divTopC || ctx.prevC || 'var(--wk-bg)'))
+    + (ctx.linkNext ? '' : divider('b', p._divBot, p._divBotH, p._divBotF, p._divBotC || ctx.nextC || 'var(--wk-bg)'));
+  const fade = p._fadeTop > 0 && !ctx.linkPrev;
+  const fx = [fade && `--wk-fade:${p._fadeTop}px;--wk-fadec:${p._fadeC || ctx.prevC || 'var(--wk-bg)'}`, p._pull > 0 && `--wk-pull:-${p._pull}px`].filter(Boolean).join(';');
+  extraCls = [extraCls, fade && 'wk-fade', p._pull > 0 && 'wk-pull'].filter(Boolean).join(' ');
   const E = edit ? (path, ml) => ` data-edit="${path}"${ml ? ' data-ml="1"' : ''} contenteditable="plaintext-only" spellcheck="false"` : () => '';
-  const st = [p._bg && `--b-bg:${p._bg}`, p._fg && `--b-fg:${p._fg}`, `--b-pt:${p._pt}px`, `--b-pb:${p._pb}px`, d.style && d.style(p)].filter(Boolean).join(';');
+  const st = [p._bgType !== 'gradient' && p._bg && `--b-bg:${p._bg}`, bgStyle(p), p._fg && `--b-fg:${p._fg}`, `--b-pt:${p._pt}px`, `--b-pb:${p._pb}px`, d.style && d.style(p)].filter(Boolean).join(';');
   const tag = d.tag || 'section';
-  return `<${tag} class="wk-b wk-${b.type} ${d.cls ? d.cls(p) : ''}${extraCls ? ' ' + extraCls : ''}"${p._id ? ` id="${esc(p._id)}"` : ''} style="${esc(st)}">${d.render(p, E, b)}</${tag}>`;
+  const an = p._anim && p._anim !== 'none'
+    ? ` data-anim="${p._anim}"${p._animSt ? ' data-st' : ''}${p._animRep ? ' data-rep' : ''}` : '';
+  const ast = (an ? `;--wk-ad:${p._animDur}ms;--wk-dl:${p._animDelay}ms` : '') + (fx ? ';' + fx : '');
+  return `<${tag} class="wk-b wk-${b.type} ${d.cls ? d.cls(p) : ''}${extraCls ? ' ' + extraCls : ''}"${p._id ? ` id="${esc(p._id)}"` : ''}${an} style="${esc(st + ast)}">${pre}${d.render(p, E, b)}</${tag}>`;
+}
+
+/* ---- animáció ----
+   A blokk (data-anim) belső tartalma animálódik, a háttér marad.
+   Lépcsőzetes módban (data-st) a tartalom elemei egymás után, --i sorszám szerint.
+   Az elrejtett kezdőállapot csak akkor él, ha fut a szkript (.wk-js), vagy a szerkesztő előnézete (.wk-prev). */
+const ANIM_GROUPS = '.wk-grid,.wk-split,.wk-foot-row,.wk-btns';
+const ANIM_T = ['[data-anim]:not([data-st])>.wk-in', `[data-anim][data-st]>.wk-in>:not(${ANIM_GROUPS})`, `[data-anim][data-st]>.wk-in>:is(${ANIM_GROUPS})>*`];
+const ANIM_CSS = `
+${ANIM_T.map(t => t.replace('[data-anim]', '[data-anim].wk-vis')).join(',')}{transition:opacity var(--wk-ad,700ms) cubic-bezier(.2,.7,.2,1) calc(var(--wk-dl,0ms) + var(--i,0) * 110ms),transform var(--wk-ad,700ms) cubic-bezier(.2,.7,.2,1) calc(var(--wk-dl,0ms) + var(--i,0) * 110ms)}
+@media (prefers-reduced-motion:no-preference){
+${[...ANIM_T.map(t => '.wk-js ' + t.replace('[data-anim]', '[data-anim]:not(.wk-vis)')), ...ANIM_T.map(t => t.replace('[data-anim]', '[data-anim].wk-prev:not(.wk-vis)'))].join(',')}{opacity:0;transform:var(--wk-at,none)}
+}
+[data-anim=up]{--wk-at:translateY(48px)}[data-anim=down]{--wk-at:translateY(-48px)}
+[data-anim=left]{--wk-at:translateX(-60px)}[data-anim=right]{--wk-at:translateX(60px)}
+[data-anim=zoom]{--wk-at:scale(.88)}[data-anim=flip]{--wk-at:perspective(900px) rotateX(24deg) translateY(20px)}
+`;
+/* futtató kód: az exportált oldalba is bekerül (toString), ezért régi böngészőkön is futó JS */
+function wkAnimIdx(sec) {
+  var i = 0;
+  [].forEach.call(sec.children, function (inn) {
+    if (!/(^| )wk-in( |$)/.test(inn.className)) return;
+    [].forEach.call(inn.children, function (c) {
+      if (/(^| )(wk-grid|wk-split|wk-foot-row|wk-btns)( |$)/.test(c.className)) [].forEach.call(c.children, function (g) { g.style.setProperty('--i', i++); });
+      else c.style.setProperty('--i', i++);
+    });
+  });
+  return i;
+}
+function wkAnimInit() {
+  var els = document.querySelectorAll('[data-anim]');
+  [].forEach.call(els, wkAnimIdx);
+  if (!('IntersectionObserver' in window)) { [].forEach.call(els, function (e) { e.classList.add('wk-vis'); }); return; }
+  var io = new IntersectionObserver(function (es) {
+    es.forEach(function (e) {
+      var rep = e.target.hasAttribute('data-rep');
+      if (e.isIntersecting) { e.target.classList.add('wk-vis'); if (!rep) io.unobserve(e.target); }
+      else if (rep) e.target.classList.remove('wk-vis');
+    });
+  }, { rootMargin: '0px 0px -10% 0px' });
+  [].forEach.call(els, function (e) { io.observe(e); });
 }
 
 /* ---- a generált oldal CSS-e (szerkesztőben és exportban ugyanaz) ---- */
@@ -336,7 +482,7 @@ const PAGE_CSS = `
 .wk-lead{font-size:clamp(17px,2cqi,22px);opacity:.9;max-width:720px;margin-bottom:34px}
 .wk-txt{opacity:.8;margin-bottom:24px}
 .wk-btns{display:flex;gap:12px;flex-wrap:wrap}
-.wk-btn{display:inline-flex;align-items:center;justify-content:center;padding:14px 28px;border-radius:var(--wk-radius);background:var(--wk-primary);color:#fff;text-decoration:none;font-weight:600;border:2px solid var(--wk-primary);transition:transform .2s,filter .2s;font-size:16px;line-height:1.2;cursor:pointer;font-family:inherit}
+.wk-btn{display:inline-flex;align-items:center;justify-content:center;padding:14px 28px;border-radius:var(--wk-radius);background:var(--wk-primary);color:var(--wk-onp,#fff);text-decoration:none;font-weight:600;border:2px solid var(--wk-primary);transition:transform .2s,filter .2s;font-size:16px;line-height:1.2;cursor:pointer;font-family:inherit}
 .wk-btn:hover{filter:brightness(1.08);transform:translateY(-2px)}
 .wk-btn.o{background:transparent;color:inherit;border-color:currentColor}
 .wk-btn.sm{padding:10px 20px;font-size:15px}
@@ -410,7 +556,7 @@ const PAGE_CSS = `
 .wk-plan li::before{content:"✓";color:var(--wk-primary);font-weight:800;margin-right:10px}
 .wk-plan .wk-btn{width:100%}
 .wk-plan:not(.hot) .wk-btn{background:transparent;color:inherit;border-color:rgba(127,127,127,.4)}
-.wk-badge{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:var(--wk-primary);color:#fff;font-size:12px;font-weight:700;padding:4px 12px;border-radius:99px;text-transform:uppercase;letter-spacing:.06em}
+.wk-badge{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:var(--wk-primary);color:var(--wk-onp,#fff);font-size:12px;font-weight:700;padding:4px 12px;border-radius:99px;text-transform:uppercase;letter-spacing:.06em}
 /* vélemények */
 .wk-b.wk-testimonials{background-color:var(--b-bg,color-mix(in srgb,var(--wk-primary) 6%,var(--wk-bg)))}
 .wk-testimonials .wk-card{display:flex;flex-direction:column;justify-content:space-between}
@@ -424,13 +570,14 @@ const PAGE_CSS = `
 .wk-member img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:calc(var(--wk-radius)*1.6);margin-bottom:16px}
 .wk-member small{opacity:.65;font-size:15px}
 /* cta */
-.wk-b.wk-cta{background-color:var(--b-bg,var(--wk-primary));color:var(--b-fg,#fff);text-align:center}
+.wk-b.wk-cta{background-color:var(--b-bg,var(--wk-primary));color:var(--b-fg,var(--wk-onp,#fff));text-align:center}
 .wk-cta .wk-lead{margin-inline:auto}
-.wk-cta .wk-btn{background:#fff;color:var(--wk-primary);border-color:#fff}
+.wk-cta .wk-btn{background:var(--wk-onp,#fff);color:var(--wk-primary);border-color:var(--wk-onp,#fff)}
 /* kapcsolat */
 .wk-contact .wk-split{align-items:start}
 .wk-ci{display:grid;gap:14px}
 .wk-ci a,.wk-ci div{display:flex;gap:14px;align-items:center;color:inherit;text-decoration:none}
+.wk-ci span .wk-svg{width:19px;height:19px}
 .wk-ci span{width:42px;height:42px;flex:none;display:grid;place-items:center;border-radius:50%;background:color-mix(in srgb,var(--wk-primary) 14%,transparent);color:var(--wk-primary);font-size:18px}
 .wk-form{display:grid;gap:14px}
 .wk-form input,.wk-form textarea{width:100%;padding:14px 16px;border-radius:var(--wk-radius);border:1px solid rgba(127,127,127,.35);background:rgba(127,127,127,.06);color:inherit;font:inherit}
@@ -445,6 +592,31 @@ const PAGE_CSS = `
 .wk-foot-links{display:flex;gap:24px;flex-wrap:wrap}
 .wk-foot-links a{color:inherit;opacity:.75;text-decoration:none}.wk-foot-links a:hover{opacity:1}
 .wk-copy{border-top:1px solid rgba(127,127,127,.25);margin-top:36px;padding-top:22px;font-size:14px;opacity:.6}
+/* ikonok */
+.wk-svg{width:1em;height:1em;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;display:block}
+.wk-ico .wk-svg{width:30px;height:30px;color:var(--wk-primary)}
+/* közösségi ikonok */
+.wk-social{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.wk-social a{display:grid;place-items:center;width:40px;height:40px;color:inherit;opacity:.85;text-decoration:none;transition:transform .2s,opacity .2s,background .2s,color .2s}
+.wk-social a:hover{opacity:1;color:var(--wk-primary);transform:translateY(-2px)}
+.wk-social .wk-svg{width:21px;height:21px}
+.wk-social.circle a,.wk-social.square a{background:rgba(127,127,127,.15);opacity:1}
+.wk-social.circle a{border-radius:50%}
+.wk-social.square a{border-radius:calc(var(--wk-radius)*.8)}
+.wk-social.circle a:hover,.wk-social.square a:hover{background:var(--wk-primary);color:var(--wk-onp,#fff)}
+.wk-links .wk-social{gap:2px}
+.wk-links .wk-social a{width:34px;height:34px}
+.wk-contact .wk-social{margin-top:26px}
+/* összefüggő háttér, határvonalak, lágy átmenet, átlógás */
+.wk-bgg .wk-b{background:none!important}
+.wk-b>.wk-in{position:relative}
+.wk-sd{position:absolute;left:0;right:0;line-height:0;pointer-events:none;overflow:hidden}
+.wk-sd svg{display:block;width:100%;height:100%}
+.wk-sd.b{bottom:-1px}
+.wk-sd.t{top:-1px;transform:scaleY(-1)}
+.wk-sd.f svg{transform:scaleX(-1)}
+.wk-fade::before{content:"";position:absolute;left:0;right:0;top:0;height:var(--wk-fade);background:linear-gradient(to bottom,var(--wk-fadec),transparent);pointer-events:none}
+.wk-pull>.wk-in:not(.wk-in~.wk-in){margin-top:var(--wk-pull)}
 /* elválasztó */
 .wk-spacer hr{border:0;border-top:1px solid rgba(127,127,127,.25);margin:0 auto;max-width:1140px}
 /* reszponzív – a konténer szélességéhez igazodik */
@@ -467,7 +639,7 @@ const PAGE_CSS = `
 .wk-grid.fx.c2{grid-template-columns:repeat(2,minmax(0,1fr))}
 .wk-grid.fx.c3{grid-template-columns:repeat(3,minmax(0,1fr))}
 .wk-grid.fx.c4{grid-template-columns:repeat(4,minmax(0,1fr))}
-`;
+` + ANIM_CSS;
 
 /* ---- kiinduló sablonok ---- */
 const TEMPLATES = {

@@ -39,6 +39,7 @@
   <div class="spacer"></div>
   <span id="status">Mentve</span>
   <div class="grp"><button id="btnHelp" title="Súgó és billentyűparancsok">?</button></div>
+  <button id="btnRandom" class="btn-g" title="Véletlen színek, betűtípus és elrendezés – Ctrl+Z visszavonja">🎲 Random téma</button>
   <button id="btnPreview" class="btn-g">Előnézet</button>
   <button id="btnExport" class="btn-p"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>HTML export</button>
 </header>
@@ -48,7 +49,7 @@
     <div class="panel-h">Blokkok</div>
     <input id="libSearch" type="search" placeholder="Keresés…">
     <div id="libList"></div>
-    <div class="lib-tip">Húzd a blokkot az oldalra, vagy kattints rá – a kijelölt blokk után kerül.</div>
+    <div class="lib-tip credit">ECKERT ANDRÁS - Vibe Coder 2026</div>
   </aside>
 
   <section id="stage" data-dev="desktop">
@@ -62,7 +63,9 @@
 <div id="dropLine"></div>
 <div id="modal" class="ui" hidden></div>
 <div id="toasts" class="ui"></div>
+<div id="picker" class="ui" hidden></div>
 
+<script src="js/icons.js"></script>
 <script src="js/blocks.js"></script>
 <script src="js/app.js"></script>
 </body>
