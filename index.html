@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WEBEKI – vizuális weboldal építő</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<link id="pageFont" rel="stylesheet" href="">
+<link rel="stylesheet" href="css/editor.css">
+<style id="pageCss"></style>
+</head>
+<body>
+
+<header id="top" class="ui">
+  <div class="brand"><span class="logo-mark">W</span>WEBEKI <small id="ver"></small></div>
+  <div class="grp">
+    <button id="btnNew" title="Új oldal sablonból"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span class="hide-s">Új</span></button>
+    <button id="btnOpen" title="Projekt megnyitása (.json)"><svg viewBox="0 0 24 24"><path d="M3 7h6l2 2h10v10H3z"/></svg><span class="hide-s">Megnyitás</span></button>
+    <button id="btnSave" title="Projekt mentése fájlba (Ctrl+S)"><svg viewBox="0 0 24 24"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3M8 21v-7h8v7"/></svg><span class="hide-s">Mentés</span></button>
+    <input type="file" id="fileOpen" accept=".json,application/json" hidden>
+  </div>
+  <div class="grp">
+    <button id="btnUndo" title="Visszavonás (Ctrl+Z)"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></button>
+    <button id="btnRedo" title="Újra (Ctrl+Shift+Z)"><svg viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h3"/></svg></button>
+  </div>
+  <div class="spacer"></div>
+  <div class="grp" id="devices">
+    <button data-dev="desktop" class="on" title="Asztali nézet"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M8 20h8M12 16v4"/></svg></button>
+    <button data-dev="tablet" title="Tablet nézet"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M11 18h2"/></svg></button>
+    <button data-dev="mobile" title="Mobil nézet"><svg viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 18h2"/></svg></button>
+  </div>
+  <span class="scope-l">Megjelenés:</span>
+  <div class="grp scope" id="scope" title="Megjelenés módosítása – billentyű: L">
+    <button data-scope="all" class="on" title="A megjelenés módosítása mindhárom nézetre érvényes">🔗 Minden nézet</button>
+    <button data-scope="only" title="A megjelenés módosítása csak az aktuális nézetben érvényes, a többi marad">📌 Csak <span id="scopeDev">Asztali</span></button>
+  </div>
+  <div class="spacer"></div>
+  <span id="status">Mentve</span>
+  <div class="grp"><button id="btnHelp" title="Súgó és billentyűparancsok">?</button></div>
+  <button id="btnPreview" class="btn-g">Előnézet</button>
+  <button id="btnExport" class="btn-p"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>HTML export</button>
+</header>
+
+<main>
+  <aside id="lib" class="ui">
+    <div class="panel-h">Blokkok</div>
+    <input id="libSearch" type="search" placeholder="Keresés…">
+    <div id="libList"></div>
+    <div class="lib-tip">Húzd a blokkot az oldalra, vagy kattints rá – a kijelölt blokk után kerül.</div>
+  </aside>
+
+  <section id="stage" data-dev="desktop">
+    <div id="zoomInfo"></div>
+    <div id="page" class="wk-page"></div>
+  </section>
+
+  <aside id="insp" class="ui"></aside>
+</main>
+
+<div id="dropLine"></div>
+<div id="modal" class="ui" hidden></div>
+<div id="toasts" class="ui"></div>
+
+<script src="js/blocks.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
