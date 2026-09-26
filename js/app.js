@@ -8,7 +8,8 @@ const clone = o => JSON.parse(JSON.stringify(o));
 const getPath = (o, p) => p.split('.').reduce((a, k) => a?.[k], o);
 const setPath = (o, p, v) => { const ks = p.split('.'), last = ks.pop(); ks.reduce((a, k) => a[k], o)[last] = v; };
 
-const VERSION = '1.0';
+// kiadáskor az index.html ?v= jeleit is emeld (böngésző gyorsítótár)
+const VERSION = '1.1';
 const LS_KEY = 'webeki.project.v1';
 const FONTS = {
   'Inter': '400;500;600;700;800', 'Poppins': '400;500;600;700;800', 'Montserrat': '400;500;600;700;800', 'Roboto': '400;500;700;900',
@@ -20,8 +21,9 @@ const PAGE_COLORS = [
   { k: 'primary', l: 'Fő szín', d: 'gombok, kiemelések' },
   { k: 'text', l: 'Szöveg', d: 'betűk színe' },
   { k: 'bg', l: 'Háttér', d: 'az oldal alapja' },
+  { k: 'btn', l: 'Gomb', d: 'üresen: fő szín', auto: 'primary' },
 ];
-const DEFAULT_PAGE = { title: 'Az én weboldalam', desc: '', font: 'Inter', headFont: '', primary: '#6d4aff', text: '#1f2433', bg: '#ffffff', radius: 10, btnStyle: 'solid', btnShape: 'theme', btnSize: 'md', btnUpper: false };
+const DEFAULT_PAGE = { title: 'Az én weboldalam', desc: '', font: 'Inter', headFont: '', primary: '#6d4aff', text: '#1f2433', bg: '#ffffff', radius: 10, btn: '', btnStyle: 'solid', btnShape: 'theme', btnSize: 'md', btnUpper: false };
 const BTN_FIELDS = [
   { k: 'btnStyle', t: 'select', l: 'Stílus', o: [['solid', 'Teli'], ['outline', 'Körvonalas'], ['soft', 'Halvány'], ['shadow', 'Árnyékos'], ['gradient', 'Színátmenetes']] },
   { k: 'btnShape', t: 'select', l: 'Forma', o: [['theme', 'Az oldal lekerekítése szerint'], ['square', 'Szögletes'], ['round', 'Enyhén lekerekített'], ['pill', 'Kapszula (teljesen kerek)']] },
@@ -173,7 +175,7 @@ const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y
 const onColor = hex => contrast(hex, '#ffffff') >= contrast(hex, '#14161c') ? '#ffffff' : '#14161c';
 function pageVars(pg) {
   const [py, px, fs] = BTN_SIZE[pg.btnSize] || BTN_SIZE.md;
-  return `--wk-btn-py:${py}px;--wk-btn-px:${px}px;--wk-btn-fs:${fs}px;${BTN_R[pg.btnShape] ? `--wk-btn-r:${BTN_R[pg.btnShape]};` : ''}--wk-onp:${onColor(pg.primary)};--wk-primary:${pg.primary};--wk-text:${pg.text};--wk-bg:${pg.bg};--wk-radius:${pg.radius}px;--wk-font:'${pg.font}',system-ui,sans-serif;` + (pg.headFont ? `--wk-head:'${pg.headFont}',system-ui,sans-serif;` : '');
+  return `${pg.btn ? `--wk-btn:${pg.btn};--wk-onb:${onColor(pg.btn)};` : ''}--wk-btn-py:${py}px;--wk-btn-px:${px}px;--wk-btn-fs:${fs}px;${BTN_R[pg.btnShape] ? `--wk-btn-r:${BTN_R[pg.btnShape]};` : ''}--wk-onp:${onColor(pg.primary)};--wk-primary:${pg.primary};--wk-text:${pg.text};--wk-bg:${pg.bg};--wk-radius:${pg.radius}px;--wk-font:'${pg.font}',system-ui,sans-serif;` + (pg.headFont ? `--wk-head:'${pg.headFont}',system-ui,sans-serif;` : '');
 }
 function applyPage() {
   const page = $('#page');
@@ -182,15 +184,17 @@ function applyPage() {
 }
 
 /* ---------------- szomszédok és háttér csoportok ---------------- */
-const groupsOf = () => S.blocks.reduce((g, b, i) => { if (i && b.p._bgLink && g.length) g[g.length - 1].push(b); else g.push([b]); return g; }, []);
-const leaderIdx = i => { while (i > 0 && S.blocks[i].p._bgLink) i--; return i; };
-const inGroup = b => { const i = idxOf(b.id); return !!(b.p._bgLink && i > 0) || !!S.blocks[i + 1]?.p._bgLink; };
+/* a menüsor sosem lehet háttér-csoport tagja (különben a sticky csak a csoporton belül működne) */
+const linked = i => i > 0 && !!S.blocks[i]?.p._bgLink && S.blocks[i].type !== 'navbar' && S.blocks[i - 1].type !== 'navbar';
+const groupsOf = () => S.blocks.reduce((g, b, i) => { if (linked(i) && g.length) g[g.length - 1].push(b); else g.push([b]); return g; }, []);
+const leaderIdx = i => { while (linked(i)) i--; return i; };
+const inGroup = b => { const i = idxOf(b.id); return linked(i) || linked(i + 1); };
 function ctxOf(i, dev) {
   const vis = j => S.blocks[j] && !eff(S.blocks[j], dev)._hide;
   let a = i - 1; while (a >= 0 && !vis(a)) a--;
   let z = i + 1; while (z < S.blocks.length && !vis(z)) z++;
   const col = j => { if (j < 0 || j >= S.blocks.length) return 'var(--wk-bg)'; const L = S.blocks[leaderIdx(j)]; return bgColorOf(eff(L, dev), L.type); };
-  return { prevC: col(a), nextC: col(z), linkPrev: i > 0 && !!S.blocks[i].p._bgLink, linkNext: !!S.blocks[i + 1]?.p._bgLink };
+  return { prevC: col(a), nextC: col(z), linkPrev: linked(i), linkNext: linked(i + 1) };
 }
 
 /* ---------------- vászon ---------------- */
@@ -420,7 +424,7 @@ function markHTML(b, k) {
 }
 function blockFields(b, fields) {
   const e = eff(b), dev = curDev();
-  return fields.filter(f => !f.when || f.when(e)).map(f => { const h = fieldHTML(f, e[f.k], f.k, markHTML(b, f.k)); return f.k in ovOf(b, dev) ? h.replace(/^<div class="f/, '<div class="f ov') : h; }).join('');
+  return fields.filter(f => (!f.when || f.when(e)) && (!f.needs || BLOCKS[b.type][f.needs])).map(f => { const h = fieldHTML(f, e[f.k], f.k, markHTML(b, f.k)); return f.k in ovOf(b, dev) ? h.replace(/^<div class="f/, '<div class="f ov') : h; }).join('');
 }
 function scopeBar(b) {
   const dev = curDev(), n = b ? ovCount(b, dev) : 0;
@@ -438,7 +442,7 @@ function renderInspector() {
     insp.dataset.target = 'page';
     insp.innerHTML = `<div class="panel-h"><span class="ph-t">⚙ Oldal beállítások</span></div><div class="insp-body">${scope === 'only' ? scopeBar(null) : ''}
 <div class="hint"><b>Tipp:</b> kattints egy blokkra a vásznon a paraméterei szerkesztéséhez, vagy közvetlenül a szövegre, hogy átírd.</div>
-<div class="sec"><div class="sec-h">Színek <button type="button" class="btn-s rnd" data-random title="Véletlen színek, betűtípus és elrendezés – Ctrl+Z visszavonja">🎲 Random téma</button></div><div class="ctiles">${PAGE_COLORS.map(c => `<div class="ctile" title="Kattints a színre a választáshoz"><input type="color" data-path="${c.k}" data-kind="cpick" value="${esc(S.page[c.k])}" aria-label="${c.l}"><b>${c.l}</b><small>${c.d}</small><input type="text" data-path="${c.k}" data-kind="ctext" value="${esc(S.page[c.k])}" spellcheck="false" maxlength="7"></div>`).join('')}</div></div>
+<div class="sec"><div class="sec-h">Színek <button type="button" class="btn-s rnd" data-random title="Véletlen színek, betűtípus és elrendezés – Ctrl+Z visszavonja">🎲 Random téma</button></div><div class="ctiles">${PAGE_COLORS.map(c => { const v = S.page[c.k], shown = v || S.page[c.auto] || '#000000'; return `<div class="ctile${c.auto && !v ? ' auto' : ''}" title="Kattints a színre a választáshoz"><input type="color" data-path="${c.k}" data-kind="cpick" value="${esc(shown)}" aria-label="${c.l}"><b>${c.l}${c.auto && v ? `<button type="button" class="ct-rst" data-cclear="${c.k}" title="Vissza: a fő színnel egyezik">↺</button>` : ''}</b><small>${c.d}</small><input type="text" data-path="${c.k}" data-kind="ctext" value="${esc(v)}" placeholder="${c.auto ? 'fő szín' : ''}" spellcheck="false" maxlength="7"></div>`; }).join('')}</div></div>
 <div class="sec"><div class="sec-h">Téma és SEO</div>${PAGE_FIELDS.map(f => fieldHTML(f, S.page[f.k], f.k)).join('')}<div style="height:8px"></div></div>
 <div class="sec"><div class="sec-h">Gombok <span class="sec-tag">az oldal összes gombja</span></div>${BTN_FIELDS.map(f => fieldHTML(f, S.page[f.k], f.k)).join('')}<div class="f"><small class="f-hint0">A második („Tudj meg többet”) gombok mindig körvonalasak maradnak, hogy a fő gomb kiemelkedjen.</small></div></div>
 <div class="sec"><div class="sec-h">Animáció minden blokkra</div><div class="f anim-all"><select id="animAll">${COMMON_FIELDS.find(f => f.k === '_anim').o.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select><button type="button" class="btn-s" data-animall>Alkalmaz</button></div><div class="f"><small class="f-hint0">Utána blokkonként is átállítható: blokk → Megjelenés → Animáció.</small></div></div>
@@ -456,6 +460,13 @@ function renderInspector() {
 
 function setField(path, v, key) {
   const tgt = insp.dataset.target;
+  if (path === '_bgLink' && v) {                          // menüsorhoz kapcsolás helyett: átlátszó menü
+    const i = idxOf(tgt), b = S.blocks[i];
+    if (b?.type === 'navbar' || S.blocks[i - 1]?.type === 'navbar') {
+      toast('A menüsorhoz nem lehet hátteret kapcsolni. Helyette: Menüsor → Megjelenés → <b>„Átlátszó menü a nyitókép fölött”</b> – így a menü a nyitókép hátterén lebeg, és görgetéskor is fent marad.', 'err');
+      renderInspector(); return;
+    }
+  }
   snap(key);
   if (tgt === 'page') { S.page[path] = v; applyPage(); }
   else {
@@ -594,6 +605,7 @@ function buildHTML() {
   const pg = S.page, fu = fontsUrl(pg);
   const nav = S.blocks.find(b => b.type === 'navbar' && DEVS.some(d => eff(b, d).sticky && !eff(b, d)._hide));
   const gcss = [], body = exportBody(gcss);
+  const hasNav = S.blocks.some(b => b.type === 'navbar' && DEVS.some(d => { const e = eff(b, d); return e.over && e.sticky && !e._hide; }));
   const hasAnim = S.blocks.some(b => DEVS.some(d => { const e = eff(b, d); return e._anim !== 'none' && !e._hide; }));
   const navH = nav ? Math.max(...DEVS.map(d => { const e = eff(nav, d); return e._pt + e._pb + 44; })) : 0;
   return `<!DOCTYPE html>
@@ -616,7 +628,7 @@ ${PAGE_CSS.trim()}${gcss.length ? '\n' + gcss.join('\n') : ''}
 <div class="wk-page ${pageCls(pg)}">
 ${body}
 </div>
-${hasAnim ? `<script>\n${wkAnimIdx}\n${wkAnimInit}\nwkAnimInit();\n</script>\n` : ''}</body>
+${hasAnim || hasNav ? `<script>\n${hasAnim ? `${wkAnimIdx}\n${wkAnimInit}\nwkAnimInit();\n` : ''}${hasNav ? `${wkNavInit}\nwkNavInit();\n` : ''}</script>\n` : ''}</body>
 </html>
 `;
 }
@@ -743,6 +755,8 @@ $('#btnHelp').onclick = () => openModal(`<div class="m-h">Hogyan működik?<butt
 <p><b>Blokkok összekapcsolása</b> – Megjelenés → Háttér: <i>Folytatja az előző blokk hátterét</i> (több blokk egy közös háttéren). Határ a szomszéd blokkokkal: formázott határvonal (hullám, ív, ferde, csúcs, cikcakk), lágy átmenet, átlógás.</p>
 <p><b>🎲 Random téma</b> – véletlen, de összeillő színek, betűtípusok, lekerekítés, térközök, elrendezés és animáció. A tartalom nem változik. Nyomd többször; <kbd>Ctrl/⌘ Z</kbd> visszahozza az előzőt.</p>
 <p><b>Horgonyok (menüből ugrás egy szakaszra)</b> – a blokk <i>Horgony (ID)</i> mezőjébe: <code>rolunk</code> (# nélkül), a menüpont linkjébe: <code>#rolunk</code> – a link mezőben legördülő listából is választhatsz. A szerkesztőben a linkek nem ugranak el (hogy a feliratot átírhasd); kipróbálni <kbd>Ctrl/⌘</kbd> + kattintással vagy az Előnézetben lehet.</p>
+<p><b>Átlátszó menü</b> – Menüsor → Megjelenés → <i>Átlátszó menü a nyitókép fölött</i>: a nyitókép a menü alá csúszik; görgetéskor a menü hátteret (és üveghatást) kap.</p>
+<p><b>Gombszín</b> – Oldal beállítások → Színek → <i>Gomb</i> (üresen a fő szín), blokkonként: blokk → Megjelenés → Gombok.</p>
 <p><b>Gombok</b> – Oldal beállítások → Gombok: stílus (teli, körvonalas, halvány, árnyékos, színátmenetes), forma, méret, nagybetűs felirat – az oldal összes gombjára.</p>
 <p><b>5. Export</b> – <i>ZIP</i>: index.html + a feltöltött képek külön <code>images</code> mappában (ajánlott), vagy <i>egyetlen HTML fájl</i>, a képek beágyazva. Bármilyen tárhelyre feltölthető (Netlify, GitHub Pages, saját tárhely). A <i>Mentés</i> projekt fájlt készít, amit később újra megnyithatsz.</p>
 <p><kbd>Ctrl/⌘ Z</kbd> visszavonás · <kbd>Ctrl/⌘ Shift Z</kbd> újra · <kbd>Ctrl/⌘ D</kbd> duplikálás · <kbd>Del</kbd> törlés · <kbd>Alt ↑/↓</kbd> mozgatás · <kbd>Esc</kbd> kijelölés megszüntetése · <kbd>Ctrl/⌘ S</kbd> projekt mentése</p>
@@ -862,7 +876,7 @@ function randomTheme() {
   Object.assign(S.page, dark
     ? { primary: hsl(h, rint(70, 90), rint(60, 68)), text: hsl(h, 14, 90), bg: hsl(h, rint(18, 30), rint(6, 9)) }
     : { primary: hsl(h, rint(65, 88), rint(40, 50)), text: hsl(h, rint(20, 35), rint(10, 16)), bg: Math.random() < .5 ? '#ffffff' : hsl(h, rint(25, 45), rint(97, 99)) },
-    { font, headFont, radius: rnd([0, 4, 8, 12, 16, 24]), btnStyle: rnd(['solid', 'solid', 'outline', 'soft', 'shadow', 'gradient']), btnShape: rnd(['theme', 'theme', 'pill', 'square', 'round']), btnUpper: Math.random() < .2 });
+    { font, headFont, radius: rnd([0, 4, 8, 12, 16, 24]), btn: Math.random() < .3 ? hsl((h + rint(150, 210)) % 360, rint(70, 90), dark ? 62 : 46) : '', btnStyle: rnd(['solid', 'solid', 'outline', 'soft', 'shadow', 'gradient']), btnShape: rnd(['theme', 'theme', 'pill', 'square', 'round']), btnUpper: Math.random() < .2 });
   for (let l = 48; !dark && contrast(S.page.primary, S.page.bg) < 3.6 && l > 20; l -= 3) S.page.primary = hsl(h, 80, l);
   const tint = dark ? hsl(h, rint(18, 28), rint(10, 13)) : hsl(h, rint(30, 55), rint(94, 97));
   const alt = rnd([0, 1, -1]), pad = rnd([72, 88, 104, 120]);

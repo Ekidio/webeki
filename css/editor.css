@@ -130,15 +130,18 @@ details.sec[open]>summary::after{transform:rotate(90deg)}
 .btn-add:hover{border-color:var(--acc);color:#fff}
 .hint{margin:12px 14px;padding:12px;border-radius:10px;background:linear-gradient(135deg,rgba(124,92,255,.14),rgba(34,211,238,.08));border:1px solid rgba(124,92,255,.25);color:var(--ui-tx2);font-size:12.5px}
 .hint b{color:var(--ui-tx)}
-.ctiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:6px 14px 12px}
+.ctiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;padding:6px 14px 12px}
 .ctile{display:flex;flex-direction:column;gap:2px;background:var(--ui-bg);border:1px solid var(--ui-line);border-radius:10px;padding:6px 6px 7px}
 .ctile:hover{border-color:var(--ui-line2)}
 .ctile input[type=color]{width:100%;height:58px;padding:0;border:0;background:none;cursor:pointer;margin-bottom:5px}
 .ctile input[type=color]::-webkit-color-swatch-wrapper{padding:0}
 .ctile input[type=color]::-webkit-color-swatch{border:1px solid rgba(255,255,255,.12);border-radius:7px}
 .ctile input[type=color]::-moz-color-swatch{border:1px solid rgba(255,255,255,.12);border-radius:7px}
-.ctile b{font-size:12px;padding:0 2px}
-.ctile small{color:var(--ui-tx3);font-size:10.5px;line-height:1.25;padding:0 2px;min-height:26px}
+.ctile b{font-size:12px;padding:0 2px;display:flex;justify-content:space-between;align-items:center}
+.ctile.auto input[type=color]{opacity:.45}
+.ct-rst{border:0;background:none;color:var(--ui-tx2);padding:0;font-size:12px;line-height:1}
+.ct-rst:hover{color:#fff}
+.ctile small{color:var(--ui-tx3);font-size:10px;overflow-wrap:anywhere;line-height:1.25;padding:0 2px;min-height:26px}
 .ctile input[type=text]{width:100%;margin-top:3px;padding:4px 6px;border-radius:6px;border:1px solid var(--ui-line);background:var(--ui-panel);font:11px ui-monospace,Menlo,monospace;text-transform:uppercase;outline:none}
 .ctile input[type=text]:focus{border-color:var(--acc)}
 .outline{padding:4px 10px 10px}
@@ -195,6 +198,7 @@ body.only .sec.look .sec-tag{color:var(--only)}
 .sub-h .btn-s{text-transform:none;letter-spacing:0;font-weight:500;padding:4px 9px}
 .anim-all{display:flex;gap:6px}.anim-all select{flex:1}
 .f-hint0{color:var(--ui-tx3);font-size:11px}
+.sec-h{display:flow-root}
 .sec-h .rnd{float:right;margin-top:-5px;text-transform:none;letter-spacing:0;font-weight:600;padding:4px 9px}
 .f-icon{display:flex;gap:6px;align-items:center}
 .f-icon input{flex:1;min-width:0}

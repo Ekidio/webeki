@@ -69,6 +69,8 @@ const COMMON_FIELDS = [
   { k: '_fadeTop', t: 'range', l: 'Lágy átmenet az előző blokkból', min: 0, max: 400, step: 10, unit: 'px', re: 1 },
   { k: '_fadeC', t: 'color', l: 'Átmenet színe', ph: 'az előző blokk színe', when: p => p._fadeTop > 0 },
   { k: '_pull', t: 'range', l: 'Átlógás: tartalom felcsúsztatása az előző blokkba', min: 0, max: 300, step: 4, unit: 'px' },
+  { t: 'head', a: 1, l: 'Gombok', needs: 'btns' },
+  { k: '_btnC', t: 'color', l: 'Gombok színe ebben a blokkban', ph: 'téma szerint', hint: 'üresen: az Oldal beállítások → Színek → Gomb színe', needs: 'btns' },
   { t: 'head', a: 1, l: 'Szöveg és térköz' },
   { k: '_fg', t: 'color', l: 'Szövegszín' },
   { k: '_pt', t: 'range', l: 'Felső térköz', min: 0, max: 240, step: 4, unit: 'px' },
@@ -87,7 +89,7 @@ const COMMON_DEFAULTS = {
   _fadeTop: 0, _fadeC: '', _pull: 0,
   _bgType: 'color', _gKind: 'linear', _g1: '', _g2: '', _gMid: 50, _gAng: 135,
   _bgImg: '', _bgFit: 'cover', _bgX: 50, _bgY: 50, _bgRep: false, _bgFix: false, _bgOvC: '', _bgOv: 0,
-  _bg: '', _fg: '', _pt: 96, _pb: 96, _id: '', _hide: false, _anim: 'none', _animDur: 700, _animDelay: 0, _animSt: true, _animRep: false };
+  _btnC: '', _bg: '', _fg: '', _pt: 96, _pb: 96, _id: '', _hide: false, _anim: 'none', _animDur: 700, _animDelay: 0, _animSt: true, _animRep: false };
 
 /* ---- gyakori mezők ---- */
 const F = {
@@ -124,6 +126,7 @@ const BLOCKS = {
 
   /* ======================= FEJLÉC ======================= */
   navbar: {
+    btns: true,
     name: 'Menüsor', cat: 'Fejléc', icon: '☰', desc: 'Logó, menüpontok, gomb, mobil menü',
     tag: 'nav',
     fields: [
@@ -132,14 +135,20 @@ const BLOCKS = {
       { k: 'links', t: 'list', l: 'Menüpontok', addL: 'Új menüpont', item: { label: 'Menüpont', href: '#' },
         fields: [{ k: 'label', t: 'text', l: 'Felirat' }, { k: 'href', t: 'text', l: 'Link', hint: 'válassz a listából (#rolunk) vagy https://… – a vásznon Ctrl/⌘+kattintással kipróbálható' }] },
       ...F.btn('btn', 'Gomb'),
-      { k: 'sticky', t: 'check', a: 1, l: 'Görgetéskor fent marad (sticky)' },
+      { k: 'sticky', t: 'check', a: 1, re: 1, l: 'Görgetéskor fent marad (sticky)' },
+      { k: 'line', t: 'check', a: 1, l: 'Vékony elválasztó vonal a menü alatt' },
+      { k: 'over', t: 'check', a: 1, re: 1, l: 'Átlátszó menü a nyitókép fölött', hint: 'a következő blokk (pl. a hero) a menü alá csúszik, és egy háttérnek látszanak' },
+      { k: 'scrollBg', t: 'color', l: 'Menü háttere görgetés közben', ph: 'az oldal háttere', when: p => p.over && p.sticky },
+      { k: 'scrollFg', t: 'color', l: 'Menü szövegszíne görgetés közben', ph: 'az oldal szövegszíne', when: p => p.over && p.sticky },
+      { k: 'glass', t: 'check', a: 1, l: 'Üveghatás görgetés közben (elmosott háttér)', when: p => p.over && p.sticky },
       ...F.social,
     ],
     defaults: {
-      _pt: 18, _pb: 18, logo: 'WEBEKI', logoImg: '', sticky: true, btnText: 'Kapcsolat', btnHref: '#kapcsolat', social: [], socStyle: 'plain',
+      _pt: 18, _pb: 18, logo: 'WEBEKI', logoImg: '', sticky: true, line: false, over: false, scrollBg: '', scrollFg: '', glass: true, btnText: 'Kapcsolat', btnHref: '#kapcsolat', social: [], socStyle: 'plain',
       links: [{ label: 'Szolgáltatások', href: '#szolgaltatasok' }, { label: 'Rólunk', href: '#rolunk' }, { label: 'Árak', href: '#arak' }, { label: 'GYIK', href: '#gyik' }],
     },
-    cls: p => p.sticky ? 'sticky' : '',
+    cls: p => [p.sticky && 'sticky', p.line && !p.over && 'line', p.over && 'over', p.over && p.glass && 'glass'].filter(Boolean).join(' '),
+    style: p => p.over ? `--wk-navh:${p._pt + p._pb + 44}px;--nav-sbg:${p.scrollBg || 'var(--wk-bg)'};--nav-sfg:${p.scrollFg || 'var(--wk-text)'}` : '',
     render: (p, E, b) => `<div class="wk-in wk-nav-row">
 <a class="wk-logo" href="#">${p.logoImg ? `<img src="${esc(p.logoImg)}" alt="">` : ''}${p.logo ? `<span${E('logo')}>${esc(p.logo)}</span>` : ''}</a>
 <input type="checkbox" id="nt-${b.id}" class="wk-nt"><label for="nt-${b.id}" class="wk-burger" aria-label="Menü"><span></span></label>
@@ -148,6 +157,7 @@ const BLOCKS = {
   },
 
   hero: {
+    btns: true,
     name: 'Nyitó (Hero)', cat: 'Fejléc', icon: '◧', desc: 'Nagy cím, háttérkép, gombok',
     fields: [
       { k: 'title', t: 'textarea', l: 'Főcím', rows: 2 },
@@ -191,6 +201,7 @@ ${p.text ? `<p class="wk-lead"${E('text', 1)}>${nl(p.text)}</p>` : ''}
   },
 
   imageText: {
+    btns: true,
     name: 'Kép + szöveg', cat: 'Tartalom', icon: '◨', desc: 'Kép az egyik, szöveg a másik oldalon',
     fields: [F.title, { k: 'text', t: 'textarea', l: 'Szöveg', rows: 5 },
       { k: 'bullets', t: 'textarea', l: 'Felsorolás', hint: 'soronként egy pont', rows: 4 },
@@ -279,6 +290,7 @@ ${p.text ? `<p class="wk-lead"${E('text', 1)}>${nl(p.text)}</p>` : ''}
 
   /* ======================= ÜZLETI ======================= */
   pricing: {
+    btns: true,
     name: 'Árazás', cat: 'Üzleti', icon: '₣', desc: 'Csomagok, árak, kiemelt csomag',
     fields: [F.title, F.subtitle, F.cols, { k: 'hotLabel', t: 'text', l: 'Kiemelés címke' },
       { k: 'items', t: 'list', l: 'Csomagok', addL: 'Új csomag', item: { name: 'Csomag', price: '9 990 Ft', period: '/hó', features: 'Első\nMásodik', btnText: 'Választom', btnHref: '#', hot: false },
@@ -324,6 +336,7 @@ ${p.text ? `<p class="wk-lead"${E('text', 1)}>${nl(p.text)}</p>` : ''}
   },
 
   cta: {
+    btns: true,
     name: 'Felhívás (CTA)', cat: 'Üzleti', icon: '➜', desc: 'Színes sáv címmel és gombbal',
     fields: [F.title, { k: 'text', t: 'textarea', l: 'Szöveg' }, ...F.btn('btn', 'Gomb')],
     defaults: { _pt: 88, _pb: 88, title: 'Készen állsz az indulásra?', text: 'Rakd össze az első oldaladat még ma – ingyen.', btnText: 'Kezdjük el', btnHref: '#kapcsolat' },
@@ -331,6 +344,7 @@ ${p.text ? `<p class="wk-lead"${E('text', 1)}>${nl(p.text)}</p>` : ''}
   },
 
   contact: {
+    btns: true,
     name: 'Kapcsolat', cat: 'Üzleti', icon: '✉', desc: 'Elérhetőségek, űrlap, térkép',
     fields: [F.title, { k: 'text', t: 'textarea', l: 'Szöveg' },
       { k: 'email', t: 'text', l: 'E-mail' }, { k: 'phone', t: 'text', l: 'Telefon' }, { k: 'address', t: 'text', l: 'Cím' },
@@ -415,7 +429,7 @@ function renderBlock(b, edit, extraCls = '', ctx = {}) {
   const fx = [fade && `--wk-fade:${p._fadeTop}px;--wk-fadec:${p._fadeC || ctx.prevC || 'var(--wk-bg)'}`, p._pull > 0 && `--wk-pull:-${p._pull}px`].filter(Boolean).join(';');
   extraCls = [extraCls, fade && 'wk-fade', p._pull > 0 && 'wk-pull'].filter(Boolean).join(' ');
   const E = edit ? (path, ml) => ` data-edit="${path}"${ml ? ' data-ml="1"' : ''} contenteditable="plaintext-only" spellcheck="false"` : () => '';
-  const st = [p._bgType !== 'gradient' && p._bg && `--b-bg:${p._bg}`, bgStyle(p), p._fg && `--b-fg:${p._fg}`, `--b-pt:${p._pt}px`, `--b-pb:${p._pb}px`, d.style && d.style(p)].filter(Boolean).join(';');
+  const st = [p._bgType !== 'gradient' && p._bg && `--b-bg:${p._bg}`, bgStyle(p), p._btnC && `--wk-btn:${p._btnC};--wk-onb:${typeof onColor === 'function' ? onColor(p._btnC) : '#fff'}`, p._fg && `--b-fg:${p._fg}`, `--b-pt:${p._pt}px`, `--b-pb:${p._pb}px`, d.style && d.style(p)].filter(Boolean).join(';');
   const tag = d.tag || 'section';
   const an = p._anim && p._anim !== 'none'
     ? ` data-anim="${p._anim}"${p._animSt ? ' data-st' : ''}${p._animRep ? ' data-rep' : ''}` : '';
@@ -450,6 +464,12 @@ function wkAnimIdx(sec) {
   });
   return i;
 }
+function wkNavInit() {
+  var n = document.querySelectorAll('.wk-navbar.over.sticky');
+  if (!n.length) return;
+  function f() { var s = (window.scrollY || document.documentElement.scrollTop) > 10; [].forEach.call(n, function (e) { e.classList.toggle('wk-scrolled', s); }); }
+  window.addEventListener('scroll', f, { passive: true }); f();
+}
 function wkAnimInit() {
   var els = document.querySelectorAll('[data-anim]');
   [].forEach.call(els, wkAnimIdx);
@@ -482,29 +502,34 @@ const PAGE_CSS = `
 .wk-lead{font-size:clamp(17px,2cqi,22px);opacity:.9;max-width:720px;margin-bottom:34px}
 .wk-txt{opacity:.8;margin-bottom:24px}
 .wk-btns{display:flex;gap:12px;flex-wrap:wrap}
-.wk-btn{display:inline-flex;align-items:center;justify-content:center;padding:var(--wk-btn-py,14px) var(--wk-btn-px,28px);border-radius:var(--wk-btn-r,var(--wk-radius));background:var(--wk-primary);color:var(--wk-onp,#fff);text-decoration:none;font-weight:600;border:2px solid var(--wk-primary);transition:transform .2s,filter .2s,background .2s,color .2s,box-shadow .2s;font-size:var(--wk-btn-fs,16px);line-height:1.2;cursor:pointer;font-family:inherit}
+.wk-btn{display:inline-flex;align-items:center;justify-content:center;padding:var(--wk-btn-py,14px) var(--wk-btn-px,28px);border-radius:var(--wk-btn-r,var(--wk-radius));background:var(--wk-btn,var(--wk-primary));color:var(--wk-onb,var(--wk-onp,#fff));text-decoration:none;font-weight:600;border:2px solid var(--wk-btn,var(--wk-primary));transition:transform .2s,filter .2s,background .2s,color .2s,box-shadow .2s;font-size:var(--wk-btn-fs,16px);line-height:1.2;cursor:pointer;font-family:inherit}
 .wk-btn:hover{filter:brightness(1.08);transform:translateY(-2px)}
 .wk-btn.o{background:transparent;color:inherit;border-color:currentColor}
 .wk-btn.sm{padding:calc(var(--wk-btn-py,14px)*.72) calc(var(--wk-btn-px,28px)*.72);font-size:calc(var(--wk-btn-fs,16px)*.93)}
 /* gomb stílusok (Oldal beállítások → Gombok) – a .wk-page osztálya dönti el */
-.bs-outline .wk-btn:not(.o){background:transparent;color:var(--wk-primary)}
-.bs-outline .wk-btn:not(.o):hover{background:var(--wk-primary);color:var(--wk-onp,#fff)}
-.bs-soft .wk-btn:not(.o){background:color-mix(in srgb,var(--wk-primary) 15%,transparent);color:var(--wk-primary);border-color:transparent}
-.bs-soft .wk-btn:not(.o):hover{background:var(--wk-primary);color:var(--wk-onp,#fff)}
-.bs-shadow .wk-btn:not(.o){box-shadow:0 10px 24px -8px color-mix(in srgb,var(--wk-primary) 75%,transparent)}
-.bs-shadow .wk-btn:not(.o):hover{box-shadow:0 16px 32px -8px color-mix(in srgb,var(--wk-primary) 85%,transparent);filter:none}
-.bs-gradient .wk-btn:not(.o){background:linear-gradient(135deg,color-mix(in srgb,var(--wk-primary) 78%,#fff),color-mix(in srgb,var(--wk-primary) 72%,#000));border-color:transparent}
-.bs-outline .wk-cta .wk-btn,.bs-soft .wk-cta .wk-btn{background:transparent;color:var(--wk-onp,#fff);border-color:var(--wk-onp,#fff)}
-.bs-outline .wk-cta .wk-btn:hover,.bs-soft .wk-cta .wk-btn:hover{background:var(--wk-onp,#fff);color:var(--wk-primary)}
-.bs-gradient .wk-cta .wk-btn{background:var(--wk-onp,#fff);color:var(--wk-primary)}
+.bs-outline .wk-btn:not(.o){background:transparent;color:var(--wk-btn,var(--wk-primary))}
+.bs-outline .wk-btn:not(.o):hover{background:var(--wk-btn,var(--wk-primary));color:var(--wk-onb,var(--wk-onp,#fff))}
+.bs-soft .wk-btn:not(.o){background:color-mix(in srgb,var(--wk-btn,var(--wk-primary)) 15%,transparent);color:var(--wk-btn,var(--wk-primary));border-color:transparent}
+.bs-soft .wk-btn:not(.o):hover{background:var(--wk-btn,var(--wk-primary));color:var(--wk-onb,var(--wk-onp,#fff))}
+.bs-shadow .wk-btn:not(.o){box-shadow:0 10px 24px -8px color-mix(in srgb,var(--wk-btn,var(--wk-primary)) 75%,transparent)}
+.bs-shadow .wk-btn:not(.o):hover{box-shadow:0 16px 32px -8px color-mix(in srgb,var(--wk-btn,var(--wk-primary)) 85%,transparent);filter:none}
+.bs-gradient .wk-btn:not(.o){background:linear-gradient(135deg,color-mix(in srgb,var(--wk-btn,var(--wk-primary)) 78%,#fff),color-mix(in srgb,var(--wk-btn,var(--wk-primary)) 72%,#000));border-color:transparent}
+.bs-outline .wk-cta .wk-btn,.bs-soft .wk-cta .wk-btn{background:transparent;color:var(--wk-btn,var(--wk-onp,#fff));border-color:var(--wk-btn,var(--wk-onp,#fff))}
+.bs-outline .wk-cta .wk-btn:hover,.bs-soft .wk-cta .wk-btn:hover{background:var(--wk-btn,var(--wk-onp,#fff));color:var(--wk-onb,var(--wk-primary))}
+.bs-gradient .wk-cta .wk-btn{background:var(--wk-btn,var(--wk-onp,#fff));color:var(--wk-onb,var(--wk-primary))}
 .bs-upper .wk-btn{text-transform:uppercase;letter-spacing:.07em;font-size:calc(var(--wk-btn-fs,16px)*.88)}
 .wk-grid{display:grid;gap:28px;grid-template-columns:repeat(3,minmax(0,1fr))}
 .wk-grid.c2{grid-template-columns:repeat(2,minmax(0,1fr))}.wk-grid.c4{grid-template-columns:repeat(4,minmax(0,1fr))}
 .wk-card{background:rgba(127,127,127,.08);border-radius:calc(var(--wk-radius)*1.6);padding:32px}
 .wk-card p{opacity:.78}
 /* menü */
-.wk-b.wk-navbar{background-color:var(--b-bg,var(--wk-bg));z-index:50;border-bottom:1px solid rgba(127,127,127,.15)}
+.wk-b.wk-navbar{background-color:var(--b-bg,var(--wk-bg));z-index:50}
+.wk-b.wk-navbar.line{border-bottom:1px solid rgba(127,127,127,.18)}
 .wk-navbar.sticky{position:sticky;top:0}
+/* átlátszó menü: a következő blokk alácsúszik (negatív alsó margó), görgetéskor (.wk-scrolled) hátteret kap */
+.wk-b.wk-navbar.over{background-color:var(--b-bg,transparent);margin-bottom:calc(-1 * var(--wk-navh,80px));transition:background-color .3s,color .3s,box-shadow .3s}
+.wk-b.wk-navbar.over.wk-scrolled{background-color:var(--nav-sbg);color:var(--nav-sfg);box-shadow:0 8px 28px -14px rgba(0,0,0,.4)}
+.wk-b.wk-navbar.over.glass.wk-scrolled{background-color:color-mix(in srgb,var(--nav-sbg) 75%,transparent);-webkit-backdrop-filter:blur(14px) saturate(1.4);backdrop-filter:blur(14px) saturate(1.4)}
 .wk-nav-row{display:flex;align-items:center;gap:24px}
 .wk-logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:22px;color:inherit;text-decoration:none;margin-right:auto;font-family:var(--wk-head,var(--wk-font));letter-spacing:-.02em}
 .wk-logo img{height:36px;width:auto}
@@ -584,7 +609,8 @@ const PAGE_CSS = `
 /* cta */
 .wk-b.wk-cta{background-color:var(--b-bg,var(--wk-primary));color:var(--b-fg,var(--wk-onp,#fff));text-align:center}
 .wk-cta .wk-lead{margin-inline:auto}
-.wk-cta .wk-btn{background:var(--wk-onp,#fff);color:var(--wk-primary);border-color:var(--wk-onp,#fff)}
+/* CTA: a fő szín háttéren alapból fordított gomb, egyedi gombszínnél az */
+.wk-cta .wk-btn{background:var(--wk-btn,var(--wk-onp,#fff));color:var(--wk-onb,var(--wk-primary));border-color:var(--wk-btn,var(--wk-onp,#fff))}
 /* kapcsolat */
 .wk-contact .wk-split{align-items:start}
 .wk-ci{display:grid;gap:14px}

@@ -70,7 +70,15 @@ Blokk → **Megjelenés**:
   - **Lágy átmenet az előző blokkból:** a határ nem éles vonal, hanem az előző blokk színe állítható magasságú sávban olvad át ebbe.
   - **Átlógás:** a blokk tartalma felcsúszik az előző blokkba (pl. egy kép félig a nyitó képre lóg). Animációval együtt adja a rétegzett, „Apple-es” hatást.
 
+### Átlátszó menü a nyitókép fölött
+
+Menüsor → Megjelenés → **Átlátszó menü a nyitókép fölött**: a következő blokk (pl. a hero) a menü alá csúszik, így a menü a nyitókép hátterén lebeg. Ha a menü „fent marad” (sticky), görgetés közben hátteret kap. Ennek színe, a szövegszín és az üveghatás (elmosott háttér) állítható. Tipp: sötét nyitóképnél a menü szövegszínét állítsd fehérre.
+
+A menüsor hátterét nem lehet a következő blokkhoz kapcsolni („Folytatja az előző blokk hátterét”), erre az átlátszó menü való.
+
 ### Gombok
+
+**Gombszín:** Oldal beállítások → Színek → **Gomb**. Üresen hagyva a fő színt követi, a ↺ ide állítja vissza. Blokkonként is felülírható: blokk → Megjelenés → **Gombok színe ebben a blokkban** (csak a gombot tartalmazó blokkoknál: menüsor, nyitó kép, kép + szöveg, árazás, felhívás, kapcsolat). A gombfelirat színe (fehér vagy sötét) mindig magától igazodik, hogy olvasható maradjon.
 
 Oldal beállítások → **Gombok** – az oldal összes gombjára egyszerre:
 
