@@ -1,6 +1,7 @@
 # WEBEKI
-
 **Weboldal-készítés kódolás nélkül, ingyen.** Rakd össze az oldalt kész blokkokból, kattints bármelyikre, és írd át.
+
+<img width="1024" height="1024" alt="800540223_3687264264755370_2457897853949809906_n" src="https://github.com/user-attachments/assets/9781c3ac-cfc7-4167-b947-2651bdd57fa9" />
 
 A WEBEKI a drága, fizetős blokkos szerkesztők (pl. Mobirise) ingyenes, nyílt forráskódú alternatívája. Nem kell telepíteni, nem kell regisztrálni, nincs előfizetés. Az elkészült oldal egyetlen `index.html` fájl, ami a tiéd, és bármilyen tárhelyre feltölthető.
 
