@@ -22,6 +22,12 @@ A WEBEKI a drága, fizetős blokkos szerkesztők (pl. Mobirise) ingyenes, nyílt
 
 A munkád abba a böngészőbe mentődik, amiben szerkesztesz. Másik gépre a **Mentés** gombbal készített projektfájllal viheted át.
 
+## 📱 WEBEKI MOBIL – telefonra
+
+👉 **[ekidio.github.io/webeki/mobil](https://ekidio.github.io/webeki/mobil/)**
+
+Ugyanaz a szerkesztő, érintésre tervezve: a vászon kitölti a képernyőt, a blokkok és a beállítások alulról felhúzható panelekben vannak, lent egy hüvelykujjal elérhető gombsor (＋ Blokk · ⚙ Oldal · 🎲 Random · ⇩ Export), a ritkább funkciók a ⋯ menüben. Koppints egy blokkra a beállításaihoz, vagy a szövegre az átírásához; a kijelölt blokk sarkában ↑ ↓ mozgatás, másolás, törlés. A projektfájl (Mentés) a két változat között átvihető. Tipp: a böngésző „Hozzáadás a kezdőképernyőhöz” menüjével appként is elindítható.
+
 ## Letöltés (offline használat)
 
 1. Töltsd le a legfrissebb **`WEBEKI-x.y.zip`** fájlt a [Releases](../../releases/latest) oldalról.
@@ -143,6 +149,7 @@ Sima HTML, CSS és JavaScript. Nincs build lépés, nincs függőség.
 | `js/icons.js` | rajzolt ikonok, közösségi ikonok, emoji készlet |
 | `js/blocks.js` | **blokk könyvtár**: minden modul mezői, alapértékei, HTML-je, a generált oldal CSS-e (`PAGE_CSS`) és a sablonok |
 | `js/app.js` | szerkesztő logika: húzás, kijelölés, paraméter panel, nézetek, visszavonás, mentés, export |
+| `mobil/` | **WEBEKI MOBIL**: telefonos felület (saját HTML, `mobile.css`, `mobile.js`), a fenti közös motorral |
 | `make-release.sh` | kiadás ZIP készítése |
 
 ### Új blokk készítése

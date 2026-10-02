@@ -761,6 +761,7 @@ $('#btnHelp').onclick = () => openModal(`<div class="m-h">Hogyan működik?<butt
 <p><b>5. Export</b> – <i>ZIP</i>: index.html + a feltöltött képek külön <code>images</code> mappában (ajánlott), vagy <i>egyetlen HTML fájl</i>, a képek beágyazva. Bármilyen tárhelyre feltölthető (Netlify, GitHub Pages, saját tárhely). A <i>Mentés</i> projekt fájlt készít, amit később újra megnyithatsz.</p>
 <p><kbd>Ctrl/⌘ Z</kbd> visszavonás · <kbd>Ctrl/⌘ Shift Z</kbd> újra · <kbd>Ctrl/⌘ D</kbd> duplikálás · <kbd>Del</kbd> törlés · <kbd>Alt ↑/↓</kbd> mozgatás · <kbd>Esc</kbd> kijelölés megszüntetése · <kbd>Ctrl/⌘ S</kbd> projekt mentése</p>
 <p style="color:var(--ui-tx3)">A munkád automatikusan mentődik ebbe a böngészőbe is.</p>
+<p>📱 <b>Telefonon?</b> Használd a <a href="mobil/" style="color:var(--acc2)">WEBEKI MOBIL</a>-t – ugyanaz a szerkesztő, érintésre tervezve.</p>
 <p style="color:var(--ui-tx3)">WEBEKI ${VERSION} · ingyenes, nyílt forráskódú (GPL v3) · <a href="https://github.com/Ekidio/webeki" target="_blank" rel="noopener" style="color:var(--acc2)">github.com/Ekidio/webeki</a></p></div>`);
 
 /* ---------------- eszköz nézet ---------------- */
@@ -783,7 +784,8 @@ function updBadges() { const b = getB(sel); if (b && !page.contains(document.act
 const DEV_W = { desktop: 1280, tablet: 820, mobile: 390 };
 function fitZoom() {
   const st = $('#stage'), w = DEV_W[st.dataset.dev];
-  const z = Math.min(1, (st.clientWidth - 56) / w);
+  const cs = getComputedStyle(st), pad = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);   // asztali: 28+28, mobil: 0
+  const z = Math.max(.15, Math.min(1, (st.clientWidth - pad) / w));
   page.style.zoom = z; page.style.setProperty("--ed-z", 1 / z);
   $('#zoomInfo').textContent = `${w}px · ${Math.round(z * 100)}%`;
 }
@@ -910,3 +912,6 @@ function toast(html, type = '') {
 $('#pageCss').textContent = PAGE_CSS;
 $('#ver').textContent = 'v' + VERSION;
 updScope(); renderLib(); applyPage(); renderCanvas(); renderInspector(); updUndo(); save();
+const IS_MOBILE_UI = document.body.classList.contains('wkm');
+if (!IS_MOBILE_UI && matchMedia('(max-width: 760px)').matches)
+  setTimeout(() => toast('📱 Telefonon vagy? <a href="mobil/" style="color:#9d86ff;font-weight:700">Nyisd meg a WEBEKI MOBIL-t</a>'), 600);

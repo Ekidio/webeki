@@ -21,6 +21,8 @@ body{background:var(--ui-bg);color:var(--ui-tx);font:13px/1.45 Inter,system-ui,-
 .grp button:disabled{opacity:.35;pointer-events:none}
 .grp svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .spacer{flex:1}
+.mob-link{display:flex;align-items:center;padding:6px 8px;border-radius:6px;text-decoration:none;font-size:14px}
+.mob-link:hover{background:var(--ui-panel2)}
 #status{color:var(--ui-tx3);font-size:12px;white-space:nowrap}
 #status::before{content:"●";color:var(--ok);margin-right:5px;font-size:9px;vertical-align:1px}
 .btn-p{border:0;background:var(--acc);color:#fff!important;padding:8px 14px;border-radius:8px;font-weight:600;display:flex;align-items:center;gap:6px}

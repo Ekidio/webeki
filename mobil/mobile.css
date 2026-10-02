@@ -1,0 +1,91 @@
+/* WEBEKI MOBIL – telefonos felület (az asztali editor.css-re épül, azt írja felül) */
+:root{--top-h:52px;--bar-h:58px;--safe-b:env(safe-area-inset-bottom,0px);--safe-t:env(safe-area-inset-top,0px)}
+html,body{height:100%;overflow:hidden;overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
+body.wkm{font-size:14px}
+/* iOS ne nagyítson rá a mezőkre (16px alatt nagyítana) */
+.wkm .ui input,.wkm .ui textarea,.wkm .ui select{font-size:16px}
+
+/* ---------- felső sáv ---------- */
+.wkm #top{height:calc(var(--top-h) + var(--safe-t));padding:var(--safe-t) 8px 0;gap:6px}
+.wkm .brand{gap:7px;margin-right:0;font-size:14px;min-width:0}
+.wkm .brand .bt{white-space:nowrap}
+.wkm .brand .bt b{color:var(--acc2);font-weight:800}
+.wkm .brand small{display:none}
+.wkm .grp button{padding:7px 8px}
+.mbtn{border:1px solid var(--ui-line);background:var(--ui-bg);border-radius:8px;width:38px;height:36px;display:grid;place-items:center;color:var(--ui-tx2)}
+.mbtn svg{width:18px;height:18px;fill:currentColor}
+@media (max-width:370px){.wkm .brand .bt{display:none}}
+
+/* ---------- menü (⋯) ---------- */
+#mmenu{position:fixed;top:calc(var(--top-h) + var(--safe-t) + 4px);right:8px;width:min(290px,calc(100vw - 16px));z-index:1500;background:var(--ui-panel);border:1px solid var(--ui-line2);border-radius:14px;box-shadow:0 20px 50px rgba(0,0,0,.55);padding:6px;display:flex;flex-direction:column;gap:2px}
+#mmenu[hidden]{display:none}
+#mmenu>button,#mmenu>a{border:0;background:none;text-align:left;padding:12px;border-radius:9px;color:var(--ui-tx);font-size:15px;text-decoration:none}
+#mmenu>button:active,#mmenu>a:active{background:var(--ui-panel2)}
+.mm-sec{padding:10px 12px 4px;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--ui-tx3);font-weight:700;border-top:1px solid var(--ui-line);margin-top:4px}
+#mmenu #scope{margin:2px 6px 6px}
+#mmenu #scope button{flex:1;justify-content:center;padding:9px 6px}
+.mm-st{padding:8px 12px 4px;border-top:1px solid var(--ui-line);margin-top:4px}
+
+/* ---------- vászon ---------- */
+.wkm main{display:block;height:calc(100% - var(--top-h) - var(--safe-t) - var(--bar-h) - var(--safe-b))}
+.wkm #stage{height:100%;padding:0;background-size:14px 14px;scroll-padding-top:8px}
+.wkm #page{border-radius:0;box-shadow:none;min-height:100%}
+.wkm #stage[data-dev=desktop] #page,.wkm #stage[data-dev=tablet] #page{box-shadow:0 0 0 1px rgba(255,255,255,.06)}
+.wkm #zoomInfo{display:none}
+.wkm #dropLine{display:none!important}
+/* nyitott panelnél a vászon alja felgörgethető a panel fölé */
+body[data-sheet=half] #stage{padding-bottom:55dvh}
+body[data-sheet=peek] #stage{padding-bottom:70px}
+/* blokk eszköztár: érintésre nagyobb gombok, húzás helyett ↑ ↓ */
+.wkm .ed-tools{top:6px;right:6px;padding:4px;border-radius:11px}
+.wkm .ed-tools button{width:36px;height:36px;font-size:16px}
+.wkm .ed-tools [data-act=drag]{display:none}
+.wkm .ed-tools .ed-name{max-width:110px;overflow:hidden;text-overflow:ellipsis}
+.wkm .ed-block:hover::after{outline-color:transparent}
+.wkm .ed-block.sel::after{outline-color:var(--acc)}
+.wkm.only .ed-block.sel::after{outline-color:var(--only)}
+.wkm .ed-block:hover>.ed-tools{opacity:0;pointer-events:none}
+.wkm .ed-block.sel>.ed-tools{opacity:1;pointer-events:auto}
+
+/* ---------- alsó gombsor ---------- */
+#mbar{position:fixed;left:0;right:0;bottom:0;z-index:800;height:calc(var(--bar-h) + var(--safe-b));padding:0 6px var(--safe-b);display:flex;gap:4px;align-items:center;background:var(--ui-panel);border-top:1px solid var(--ui-line)}
+#mbar button{flex:1;height:48px;border:0;background:none;border-radius:11px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;color:var(--ui-tx2)}
+#mbar button b{font-size:19px;line-height:1;font-weight:500}
+#mbar button span{font-size:11px;font-weight:600}
+#mbar button:active{background:var(--ui-panel2)}
+#mbar button.on{color:#fff;background:var(--ui-panel2)}
+#mbar button.pri{background:var(--acc);color:#fff}
+
+/* ---------- alulról felhúzható panelek ---------- */
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:900;height:92dvh;display:flex;flex-direction:column;background:var(--ui-panel);border-radius:18px 18px 0 0;box-shadow:0 -14px 40px rgba(0,0,0,.5);border-top:1px solid var(--ui-line2);transform:translateY(105%);transition:transform .3s cubic-bezier(.2,.8,.2,1);padding-bottom:var(--safe-b);will-change:transform}
+.sheet[data-state=full]{transform:translateY(0)}
+.sheet[data-state=half]{transform:translateY(calc(92dvh - 58dvh))}
+.sheet[data-state=peek]{transform:translateY(calc(92dvh - 104px - var(--safe-b)))}
+.sheet.drag{transition:none}
+.grab{flex:none;height:26px;display:grid;place-items:center;touch-action:none;cursor:grab}
+.grab::before{content:"";width:44px;height:5px;border-radius:9px;background:var(--ui-line2)}
+.sheet aside{flex:1;min-height:0;border:0!important;background:none}
+.sheet .panel-h{padding-top:4px;min-height:40px}
+.sh-x{border:0;background:var(--ui-panel2);width:32px;height:32px;border-radius:50%;color:var(--ui-tx2);font-size:14px}
+#lib .panel-h{text-transform:none;letter-spacing:0;font-size:13px;color:var(--ui-tx)}
+#libList{padding-bottom:20px}
+.wkm .lib-item{padding:10px 8px}
+.wkm .lib-ico{width:42px;height:42px}
+.wkm .insp-body{padding-bottom:30px;-webkit-overflow-scrolling:touch}
+.wkm .f{padding:8px 14px}
+.wkm .f input[type=text],.wkm .f textarea,.wkm .f select{padding:9px 10px}
+.wkm .f-range input{height:28px}
+.wkm .li-b button{width:32px;height:32px}
+.wkm .ph-b button{width:36px;height:36px}
+
+/* ---------- ablakok, ikonválasztó, értesítések ---------- */
+.wkm #modal{padding:10px;align-items:end}
+.wkm .m-box{max-height:88dvh;border-radius:18px}
+.wkm .tpl-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:14px}
+.wkm .tpl-prev{height:120px}
+.wkm .exp-grid{grid-template-columns:1fr}
+.wkm #picker{left:8px!important;right:8px;width:auto;top:auto!important;bottom:calc(8px + var(--safe-b));max-height:60dvh;display:flex;flex-direction:column}
+.wkm #picker[hidden]{display:none}
+.wkm .pk-grid{grid-template-columns:repeat(7,1fr);max-height:none;flex:1}
+.wkm #toasts{bottom:calc(var(--bar-h) + var(--safe-b) + 12px);width:calc(100vw - 24px)}
+.wkm .toast{text-align:center}
