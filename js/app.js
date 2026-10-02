@@ -9,7 +9,7 @@ const getPath = (o, p) => p.split('.').reduce((a, k) => a?.[k], o);
 const setPath = (o, p, v) => { const ks = p.split('.'), last = ks.pop(); ks.reduce((a, k) => a[k], o)[last] = v; };
 
 // kiadáskor az index.html ?v= jeleit is emeld (böngésző gyorsítótár)
-const VERSION = '1.1';
+const VERSION = '1.2';
 const LS_KEY = 'webeki.project.v1';
 const FONTS = {
   'Inter': '400;500;600;700;800', 'Poppins': '400;500;600;700;800', 'Montserrat': '400;500;600;700;800', 'Roboto': '400;500;700;900',
