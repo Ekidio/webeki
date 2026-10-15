@@ -9,7 +9,7 @@ const getPath = (o, p) => p.split('.').reduce((a, k) => a?.[k], o);
 const setPath = (o, p, v) => { const ks = p.split('.'), last = ks.pop(); ks.reduce((a, k) => a[k], o)[last] = v; };
 
 // kiadáskor az index.html ?v= jeleit is emeld (böngésző gyorsítótár)
-const VERSION = '1.4';
+const VERSION = '1.5';
 const LS_KEY = 'webeki.project.v1';
 const FONTS = {
   'Inter': '400;500;600;700;800', 'Poppins': '400;500;600;700;800', 'Montserrat': '400;500;600;700;800', 'Roboto': '400;500;700;900',
@@ -190,7 +190,7 @@ const groupsOf = () => S.blocks.reduce((g, b, i) => { if (linked(i) && g.length)
 const leaderIdx = i => { while (linked(i)) i--; return i; };
 const inGroup = b => { const i = idxOf(b.id); return linked(i) || linked(i + 1); };
 function ctxOf(i, dev) {
-  const vis = j => S.blocks[j] && !eff(S.blocks[j], dev)._hide;
+  const vis = j => S.blocks[j] && !eff(S.blocks[j], dev)._hide && !['float', 'consent'].includes(S.blocks[j].type);
   let a = i - 1; while (a >= 0 && !vis(a)) a--;
   let z = i + 1; while (z < S.blocks.length && !vis(z)) z++;
   const col = j => { if (j < 0 || j >= S.blocks.length) return 'var(--wk-bg)'; const L = S.blocks[leaderIdx(j)]; return bgColorOf(eff(L, dev), L.type); };
@@ -438,6 +438,7 @@ function scopeBar(b) {
     ? `<div class="scope-bar all">${sw}A megjelenés <b>mindhárom nézetben</b> változik.${DEVS.some(d => ovCount(b, d)) ? '<small>A D/T/M jelölésű mezőknél ez a nézetenkénti eltérést is felülírja.</small>' : ''}</div>`
     : `<div class="scope-bar only">${sw}A megjelenés <b>csak ${DEV_N[dev]}</b> nézetben változik, a többi marad.${n ? `<button type="button" class="rst" data-ovresetall>Mind a ${n} eltérés törlése</button>` : ''}</div>`;
 }
+const commonFor = d => d.bare ? COMMON_FIELDS.filter(f => f.k === '_hide') : COMMON_FIELDS;
 function renderInspector() {
   const body0 = $('.insp-body', insp);
   const keep = body0 && insp.dataset.target === (sel || 'page') ? body0.scrollTop : 0;
@@ -455,8 +456,8 @@ function renderInspector() {
     const d = BLOCKS[b.type];
     insp.dataset.target = b.id;
     insp.innerHTML = `<div class="panel-h"><span class="ph-t"><span style="color:var(--acc2)">${esc(d.icon)}</span>${esc(d.name)}</span><span class="ph-b"><button type="button" data-bact="dup" title="Duplikálás">⧉</button><button type="button" class="del" data-bact="del" title="Törlés">🗑</button><button type="button" data-bact="close" title="Bezárás (Esc)">✕</button></span></div>
-<div class="insp-body"><div class="sec"><div class="sec-h">Tartalom <span class="sec-tag">🔗 minden nézetben közös</span></div>${blockFields(b, [...d.fields, ...COMMON_FIELDS].filter(f => !isLook(f) && f.sec !== 'look'))}<div style="height:8px"></div></div>
-<div class="sec look"><div class="sec-h">Megjelenés <span class="sec-tag">nézetenként állítható</span></div>${scopeBar(b)}${blockFields(b, [...d.fields, ...COMMON_FIELDS].filter(f => isLook(f) || f.sec === 'look'))}<div style="height:8px"></div></div></div>`;
+<div class="insp-body"><div class="sec"><div class="sec-h">Tartalom <span class="sec-tag">🔗 minden nézetben közös</span></div>${blockFields(b, [...d.fields, ...commonFor(d)].filter(f => !isLook(f) && f.sec !== 'look'))}<div style="height:8px"></div></div>
+<div class="sec look"><div class="sec-h">Megjelenés <span class="sec-tag">nézetenként állítható</span></div>${scopeBar(b)}${blockFields(b, [...d.fields, ...commonFor(d)].filter(f => isLook(f) || f.sec === 'look'))}<div style="height:8px"></div></div></div>`;
   }
   insp.insertAdjacentHTML('beforeend', anchorList());
   if (keep) $('.insp-body', insp).scrollTop = keep;
@@ -617,6 +618,8 @@ function buildHTML() {
   const nav = S.blocks.find(b => b.type === 'navbar' && DEVS.some(d => eff(b, d).sticky && !eff(b, d)._hide));
   const gcss = [], body = exportBody(gcss);
   const hasPlayer = S.blocks.some(b => b.type === 'player'), hasVid = S.blocks.some(b => b.type === 'videos');
+  const hasCmp = S.blocks.some(b => b.type === 'compare'), hasCk = S.blocks.some(b => b.type === 'consent');
+  const fx = S.blocks.filter(b => OVERLAY.has(b.type)).map(exportBlock).filter(Boolean).join('\n');
   const hasNav = S.blocks.some(b => b.type === 'navbar' && DEVS.some(d => { const e = eff(b, d); return e.over && e.sticky && !e._hide; }));
   const hasAnim = S.blocks.some(b => DEVS.some(d => { const e = eff(b, d); return e._anim !== 'none' && !e._hide; }));
   const navH = nav ? Math.max(...DEVS.map(d => { const e = eff(nav, d); return e._pt + e._pb + 44; })) : 0;
@@ -632,7 +635,7 @@ html{scroll-behavior:smooth${navH ? `;scroll-padding-top:${navH}px` : ''}}body{m
 @media (min-width:1025px){.wk-only:not(.wk-on-d){display:none!important}}
 @media (min-width:601px) and (max-width:1024px){.wk-only:not(.wk-on-t){display:none!important}}
 @media (max-width:600px){.wk-only:not(.wk-on-m){display:none!important}}
-.wk-page{${pageVars(pg)}min-height:100vh}
+.wk-page{${pageVars(pg)}min-height:100vh}${fx ? `\n.wk-fx{${pageVars(pg)}}` : ''}
 ${PAGE_CSS.trim()}${gcss.length ? '\n' + gcss.join('\n') : ''}
 </style>
 </head>
@@ -640,14 +643,17 @@ ${PAGE_CSS.trim()}${gcss.length ? '\n' + gcss.join('\n') : ''}
 <div class="wk-page ${pageCls(pg)}">
 ${body}
 </div>
-${hasAnim || hasNav || hasPlayer || hasVid ? `<script>\n${hasPlayer ? `${wkPlayerInit}\nwkPlayerInit();\n` : ''}${hasVid ? `${wkVidInit}\nwkVidInit();\n` : ''}${hasAnim ? `${wkAnimIdx}\n${wkAnimInit}\nwkAnimInit();\n` : ''}${hasNav ? `${wkNavInit}\nwkNavInit();\n` : ''}</script>\n` : ''}</body>
+${fx ? `<div class="wk-fx ${pageCls(pg)}">\n${fx}\n</div>\n` : ''}
+${hasAnim || hasNav || hasPlayer || hasVid || hasCmp || hasCk ? `<script>\n${hasCmp ? `${wkCmpInit}\nwkCmpInit();\n` : ''}${hasCk ? `${wkConsentInit}\nwkConsentInit();\n` : ''}${hasPlayer ? `${wkPlayerInit}\nwkPlayerInit();\n` : ''}${hasVid ? `${wkVidInit}\nwkVidInit();\n` : ''}${hasAnim ? `${wkAnimIdx}\n${wkAnimInit}\nwkAnimInit();\n` : ''}${hasNav ? `${wkNavInit}\nwkNavInit();\n` : ''}</script>\n` : ''}</body>
 </html>
 `;
 }
 /* ha egy blokk nézetenként eltér, minden különböző változat bekerül, és CSS dönti el, melyik látszik */
+const OVERLAY = new Set(['float', 'consent']);       // a képernyőhöz rögzülő blokkok
 function exportBody(gcss) {
   return groupsOf().map(g => {
-    const inner = g.map(exportBlock).filter(Boolean).join('\n');
+    const inner = g.filter(b => !OVERLAY.has(b.type)).map(exportBlock).filter(Boolean).join('\n');
+    if (!inner) return '';
     if (g.length < 2) return inner;
     const L = g[0], cls = 'g-' + L.id, st = DEVS.map(d => groupStyle(eff(L, d), L.type));
     if (st.every(x => x === st[0])) gcss.push(`.${cls}{${st[0]}}`);
@@ -770,6 +776,7 @@ $('#btnHelp').onclick = () => openModal(`<div class="m-h">Hogyan működik?<butt
 <p><b>🎲 Random téma</b> – véletlen, de összeillő színek, betűtípusok, lekerekítés, térközök, elrendezés és animáció. A tartalom nem változik. Nyomd többször; <kbd>Ctrl/⌘ Z</kbd> visszahozza az előzőt.</p>
 <p><b>Horgonyok (menüből ugrás egy szakaszra)</b> – a blokk <i>Horgony (ID)</i> mezőjébe: <code>rolunk</code> (# nélkül), a menüpont linkjébe: <code>#rolunk</code> – a link mezőben legördülő listából is választhatsz. A szerkesztőben a linkek nem ugranak el (hogy a feliratot átírhasd); kipróbálni <kbd>Ctrl/⌘</kbd> + kattintással vagy az Előnézetben lehet.</p>
 <p><b>Átlátszó menü</b> – Menüsor → Megjelenés → <i>Átlátszó menü a nyitókép fölött</i>: a nyitókép a menü alá csúszik; görgetéskor a menü hátteret (és üveghatást) kap.</p>
+<p><b>Modern blokkok</b> – <i>Bento rács</i> (csempék eltérő méretekben), <i>Előtte–utána</i> (két kép húzható elválasztóval), <i>Lebegő kapcsolat gomb</i> (WhatsApp, Messenger, hívás, e-mail a képernyő sarkában), <i>Süti-tájékoztató</i> (GDPR sáv az első látogatáskor). A lebegő elemek a kész oldalon a képernyő sarkában jelennek meg, a szerkesztőben a blokk helyén látod őket.</p>
 <p><b>🎵 Zenészeknek</b> – <i>Zenelejátszó</i> (saját dalok számlistával; hangfájl linkkel vagy feltöltéssel), <i>Hallgasd meg</i> (Spotify, Apple Music, YouTube Music, Deezer, TIDAL, SoundCloud, Bandcamp… gombok), <i>Videóklipek</i> (YouTube klipek rácsban, kattintásra indulnak). Sablon: Új → Zenész / zenekar.</p>
 <p><b>Gombszín</b> – Oldal beállítások → Színek → <i>Gomb</i> (üresen a fő szín), blokkonként: blokk → Megjelenés → Gombok.</p>
 <p><b>Gombok</b> – Oldal beállítások → Gombok: stílus (teli, körvonalas, halvány, árnyékos, színátmenetes), forma, méret, nagybetűs felirat – az oldal összes gombjára.</p>
@@ -959,6 +966,7 @@ updScope(); renderLib(); applyPage(); renderCanvas(); renderInspector(); updUndo
 const IS_MOBILE_UI = document.body.classList.contains('wkm');
 if (typeof wkBrand === 'function') wkBrand();
 if (typeof wkPlayerInit === 'function') wkPlayerInit();
-if (typeof wkVidInit === 'function') wkVidInit();      // EKIDIO családi logó + indító animáció (js/brand.js)
+if (typeof wkVidInit === 'function') wkVidInit();
+if (typeof wkCmpInit === 'function') wkCmpInit();      // EKIDIO családi logó + indító animáció (js/brand.js)
 if (!IS_MOBILE_UI && matchMedia('(max-width: 760px)').matches)
   setTimeout(() => toast('📱 Telefonon vagy? <a href="mobil/index.html" style="color:var(--acc2);font-weight:700">Nyisd meg a WEBEKI MOBIL-t</a>'), 600);

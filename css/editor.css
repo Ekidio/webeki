@@ -245,6 +245,15 @@ body.only .sec.look .sec-tag{color:var(--only)}
 @media (max-width:700px){.exp-grid{grid-template-columns:1fr}}
 .exp code{background:var(--ui-bg);padding:1px 5px;border-radius:4px;font-size:11px}
 
+/* lebegő blokkok előnézete a szerkesztőben (a kész oldalon a képernyő sarkában vannak) */
+#page .wk-float,#page .wk-consent{padding:44px 24px 24px!important;background:repeating-linear-gradient(135deg,rgba(127,127,127,.06) 0 12px,transparent 12px 24px)!important;border-top:1px dashed rgba(127,127,127,.35);border-bottom:1px dashed rgba(127,127,127,.35)}
+#page .wk-float::before,#page .wk-consent::before{position:absolute;top:14px;left:24px;font:600 12px Inter,system-ui,sans-serif;color:#7d8296;letter-spacing:.02em}
+#page .wk-float::before{content:"💬 Lebegő kapcsolat gomb – a kész oldalon a képernyő sarkában lebeg, görgetéskor is"}
+#page .wk-consent::before{content:"🍪 Süti-tájékoztató – a kész oldalon az első látogatáskor alul jelenik meg"}
+#page .wkf,#page .wkck{position:relative;inset:auto;transform:none;margin:0}
+#page .wkf.right{margin-left:auto;width:max-content}
+#page .wkf .wkf-t{display:block;position:absolute;opacity:0;pointer-events:none}
+
 /* ---------- modal, toast ---------- */
 #modal{position:fixed;inset:0;background:rgba(5,6,10,.7);backdrop-filter:blur(4px);display:grid;place-items:center;z-index:2000;padding:20px}
 #modal[hidden]{display:none}

@@ -5,7 +5,7 @@
 
 A WEBEKI a drága, fizetős blokkos szerkesztők (pl. Mobirise) ingyenes, nyílt forráskódú alternatívája. Nem kell telepíteni, nem kell regisztrálni, nincs előfizetés. Az elkészült oldal egyetlen `index.html` fájl, ami a tiéd, és bármilyen tárhelyre feltölthető.
 
-- **20 kész blokk:** menüsor mobil menüvel, nyitó kép (hero), szolgáltatások, kép + szöveg, számok, szöveg, GYIK, galéria, videó (YouTube/MP4), árazás, vélemények, csapat, felhívás (CTA), kapcsolat űrlappal és térképpel, lábléc, elválasztó, egyedi HTML – és zenészeknek: zenelejátszó, „Hallgasd meg” streaming gombok, videóklipek.
+- **24 kész blokk:** menüsor mobil menüvel, nyitó kép (hero), szolgáltatások, kép + szöveg, számok, szöveg, GYIK, galéria, videó (YouTube/MP4), árazás, vélemények, csapat, felhívás (CTA), kapcsolat űrlappal és térképpel, lábléc, elválasztó, egyedi HTML – modern kiegészítők: bento rács, előtte–utána képcsúszka, lebegő kapcsolat gomb (WhatsApp, Messenger, hívás), süti-tájékoztató (GDPR) – és zenészeknek: zenelejátszó, „Hallgasd meg” streaming gombok, videóklipek.
 - **Kattints és állítsd be:** minden blokk szövege, képe, színe, oszlopszáma, igazítása és térköze a jobb oldali panelen. A szöveget közvetlenül az oldalon is átírhatod.
 - **Asztali, tablet és mobil nézet:** a tartalom mindenhol közös, a megjelenés (pl. igazítás, oszlopok, térköz, elrejtés) nézetenként is külön állítható.
 - **Animáció blokkonként:** be/ki kapcsolható, választható típus (beúszás 4 irányból, előtűnés, nagyítás, billenés), időtartam, késleltetés, lépcsőzetes megjelenés.
@@ -99,6 +99,15 @@ A második („Tudj meg többet”) gombok mindig körvonalasak maradnak, hogy a
 ### Lekerekítés
 
 Oldal beállítások → **Lekerekítés** (0–30 px): a gombok és űrlapmezők sarka pontosan ennyi. A nagyobb felületek arányosan jobban kerekednek, hogy összhangban maradjanak: ikonhátterek és galériaképek ×1,4, kártyák, csapatfotók, videó és térkép ×1,6, a „Kép + szöveg” képe ×2. 0 = teljesen szögletes. A címkék (pl. „Népszerű”) mindig kapszula alakúak.
+
+### Modern blokkok
+
+- **Bento rács:** az Apple-oldalakról ismert csempe-elrendezés. Csempénként választható méret (kicsi, széles, magas, nagy), kinézet (halvány kártya, fő színű, sötét, kép háttérrel), ikon, cím és szöveg. Tableten 2, mobilon 1 oszlopba rendeződik.
+- **Előtte–utána:** két kép egymáson, húzható elválasztóval (egérrel és ujjal is). Állítható feliratok, kezdő pozíció, képarány.
+- **Lebegő kapcsolat gomb:** a képernyő sarkában lebeg, görgetéskor is. Egy gombnál közvetlenül hív vagy üzenetet nyit, több gombnál egy kis menüt nyit: WhatsApp, Messenger, Telegram, telefonhívás, e-mail vagy bármilyen link. Kérhető buborék-szöveg (pl. „Írj nekünk!”) és lüktető kiemelés.
+- **Süti-tájékoztató (GDPR):** az első látogatáskor alul megjelenő sáv vagy sarokdoboz, elfogadás / „csak a szükségesek” gombbal, az adatkezelési tájékoztató linkjével. A látogató döntését a böngésző megjegyzi, így többször nem jelenik meg. (Tájékoztat és rögzíti a döntést; a beágyazott tartalmakat – pl. YouTube, térkép – nem tiltja le.)
+
+A lebegő gomb és a süti-sáv a szerkesztőben a blokk helyén látszik, a kész oldalon a képernyő sarkában / alján.
 
 ### 🎵 Zenészeknek
 
