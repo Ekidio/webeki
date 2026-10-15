@@ -5,7 +5,7 @@
 
 A WEBEKI a drága, fizetős blokkos szerkesztők (pl. Mobirise) ingyenes, nyílt forráskódú alternatívája. Nem kell telepíteni, nem kell regisztrálni, nincs előfizetés. Az elkészült oldal egyetlen `index.html` fájl, ami a tiéd, és bármilyen tárhelyre feltölthető.
 
-- **17 kész blokk:** menüsor mobil menüvel, nyitó kép (hero), szolgáltatások, kép + szöveg, számok, szöveg, GYIK, galéria, videó (YouTube/MP4), árazás, vélemények, csapat, felhívás (CTA), kapcsolat űrlappal és térképpel, lábléc, elválasztó, egyedi HTML.
+- **20 kész blokk:** menüsor mobil menüvel, nyitó kép (hero), szolgáltatások, kép + szöveg, számok, szöveg, GYIK, galéria, videó (YouTube/MP4), árazás, vélemények, csapat, felhívás (CTA), kapcsolat űrlappal és térképpel, lábléc, elválasztó, egyedi HTML – és zenészeknek: zenelejátszó, „Hallgasd meg” streaming gombok, videóklipek.
 - **Kattints és állítsd be:** minden blokk szövege, képe, színe, oszlopszáma, igazítása és térköze a jobb oldali panelen. A szöveget közvetlenül az oldalon is átírhatod.
 - **Asztali, tablet és mobil nézet:** a tartalom mindenhol közös, a megjelenés (pl. igazítás, oszlopok, térköz, elrejtés) nézetenként is külön állítható.
 - **Animáció blokkonként:** be/ki kapcsolható, választható típus (beúszás 4 irányból, előtűnés, nagyítás, billenés), időtartam, késleltetés, lépcsőzetes megjelenés.
@@ -13,7 +13,7 @@ A WEBEKI a drága, fizetős blokkos szerkesztők (pl. Mobirise) ingyenes, nyílt
 - **Gombstílusok:** teli, körvonalas, halvány, árnyékos vagy színátmenetes; szögletes, lekerekített vagy kapszula forma; 3 méret.
 - **Export ZIP-be vagy egy HTML fájlba:** a ZIP-ben a feltöltött képek külön `images` mappába kerülnek.
 - **🎲 Random téma:** egy kattintás, és új, összeillő színek, betűtípusok és elrendezés, a tartalom változatlan.
-- **Sablonok:** termék landing, cégbemutató, portfólió, vagy üres oldal.
+- **Sablonok:** termék landing, cégbemutató, portfólió, zenész / zenekar, vagy üres oldal.
 - **Magyar felület**, visszavonás, automatikus mentés a böngészőbe.
 
 ## Kipróbálás online
@@ -99,6 +99,14 @@ A második („Tudj meg többet”) gombok mindig körvonalasak maradnak, hogy a
 ### Lekerekítés
 
 Oldal beállítások → **Lekerekítés** (0–30 px): a gombok és űrlapmezők sarka pontosan ennyi. A nagyobb felületek arányosan jobban kerekednek, hogy összhangban maradjanak: ikonhátterek és galériaképek ×1,4, kártyák, csapatfotók, videó és térkép ×1,6, a „Kép + szöveg” képe ×2. 0 = teljesen szögletes. A címkék (pl. „Népszerű”) mindig kapszula alakúak.
+
+### 🎵 Zenészeknek
+
+- **Zenelejátszó:** saját dalaid lejátszása az oldalon – borító, előadó, lejátszás/szünet, előző/következő, tekerés, számlista. A hangfájl megadható linkkel (pl. a saját tárhelyedről) vagy feltöltéssel (4 MB-ig; ZIP exportnál az `audio` mappába kerül).
+- **Hallgasd meg:** nagy gombok a streaming oldalaidra (Spotify, Apple Music, YouTube Music, YouTube, Deezer, TIDAL, SoundCloud, Bandcamp, Amazon Music, Beatport) – a szolgáltatók saját színeivel, az oldal gombszínével vagy körvonalasan; listában vagy egy sorban.
+- **Videóklipek:** YouTube (vagy MP4) klipek rácsban, előnézeti képpel; kattintásra az oldalon indulnak, így az oldal gyorsan betölt.
+- **Sablon:** Új → **Zenész / zenekar** (átlátszó menü, nyitókép, lejátszó, streaming gombok, klipek, fotók, booking).
+- A közösségi ikonok között is van Spotify, Apple Music, SoundCloud, Bandcamp, Deezer és TIDAL.
 
 ### Animáció
 

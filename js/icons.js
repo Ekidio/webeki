@@ -67,6 +67,22 @@ const SOCIAL = {
   web: { n: 'Weboldal', d: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>' },
 };
 
+/* zenei szolgáltatók: név, márkaszín (c), felirat színe (t), ikon */
+const F2 = 'fill="currentColor" stroke="none"';
+const MUSIC = {
+  spotify: { n: 'Spotify', c: '#1db954', t: '#000', d: '<circle cx="12" cy="12" r="9.5"/><path d="M7 9.4c3.6-1 7.3-.6 10.2 1.1M7.7 12.5c2.9-.8 5.9-.4 8.3 1M8.4 15.4c2.2-.6 4.4-.3 6.2.8"/>' },
+  applemusic: { n: 'Apple Music', c: '#fa243c', t: '#fff', d: '<path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/>' },
+  ytmusic: { n: 'YouTube Music', c: '#ff0033', t: '#fff', d: `<circle cx="12" cy="12" r="9.5"/><circle cx="12" cy="12" r="5.2"/><path ${F2} d="m10.6 9.6 3.8 2.4-3.8 2.4z"/>` },
+  youtube: { n: 'YouTube', c: '#ff0033', t: '#fff', d: `<path ${F2} fill-rule="evenodd" d="M22 8.2a3 3 0 0 0-2.1-2.1C18 5.6 12 5.6 12 5.6s-6 0-7.9.5A3 3 0 0 0 2 8.2 31 31 0 0 0 1.6 12a31 31 0 0 0 .4 3.8 3 3 0 0 0 2.1 2.1c1.9.5 7.9.5 7.9.5s6 0 7.9-.5a3 3 0 0 0 2.1-2.1c.3-1.3.4-2.5.4-3.8s-.1-2.5-.4-3.8zM10 15V9l5.2 3z"/>` },
+  deezer: { n: 'Deezer', c: '#a238ff', t: '#fff', d: '<path stroke-width="2.4" stroke-linecap="butt" d="M3 18h3.4M8.2 18h3.4M13.4 18h3.4M18.6 18H22M8.2 14.5h3.4M13.4 14.5h3.4M18.6 14.5H22M13.4 11h3.4M18.6 11H22M18.6 7.5H22"/>' },
+  tidal: { n: 'TIDAL', c: '#111111', t: '#fff', d: `<path ${F2} d="m12 4.5 3.3 3.3L12 11.1 8.7 7.8zM5.3 7.8l3.3 3.3-3.3 3.3L2 11.1zm13.4 0 3.3 3.3-3.3 3.3-3.3-3.3zM12 11.1l3.3 3.3-3.3 3.3-3.3-3.3z"/>` },
+  soundcloud: { n: 'SoundCloud', c: '#ff5500', t: '#fff', d: '<path d="M3 15.5v-3M6 15.5v-5M9 15.5V8.8M12 15.5V7.2c2.9 0 5 1.9 5.4 4.4a3 3 0 0 1 3.6 2.9 1 1 0 0 1-1 1H12"/>' },
+  bandcamp: { n: 'Bandcamp', c: '#1da0c3', t: '#fff', d: `<path ${F2} d="M2.5 17.5 8.6 6.5h12.9l-6.1 11z"/>` },
+  amazon: { n: 'Amazon Music', c: '#25d1da', t: '#000', d: '<path d="M3.5 13.8c4.8 3.4 12.2 3.4 17 0"/><path d="M17.4 12.4l3.3 1.3-1 3.3"/><path d="M8 4v6M12 6v4M16 3v7"/>' },
+  beatport: { n: 'Beatport', c: '#01ff95', t: '#000', d: '<circle cx="9" cy="15" r="5"/><path d="M14 15V4M14 10l5-5"/>' },
+};
+['spotify', 'applemusic', 'soundcloud', 'bandcamp', 'deezer', 'tidal'].forEach(k => { SOCIAL[k] = { n: MUSIC[k].n, d: MUSIC[k].d }; });
+
 const EMOJIS = ('⚡ 🚀 💡 ⭐ ✨ 🔥 🎯 🏆 ✅ 👍 🙌 🤝 😊 ❤️ 💎 🎨 ' +
   '📱 💻 🖥️ ⌨️ 🔒 🛡️ ⚙️ 🔧 🧰 🔨 🏗️ 📈 📊 💰 💼 🛒 ' +
   '🎁 📦 🚚 ✈️ 🌍 🏠 📍 🕒 📅 📞 ✉️ 💬 🔔 👥 👤 👶 ' +

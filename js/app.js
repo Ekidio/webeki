@@ -9,7 +9,7 @@ const getPath = (o, p) => p.split('.').reduce((a, k) => a?.[k], o);
 const setPath = (o, p, v) => { const ks = p.split('.'), last = ks.pop(); ks.reduce((a, k) => a[k], o)[last] = v; };
 
 // kiadáskor az index.html ?v= jeleit is emeld (böngésző gyorsítótár)
-const VERSION = '1.3';
+const VERSION = '1.4';
 const LS_KEY = 'webeki.project.v1';
 const FONTS = {
   'Inter': '400;500;600;700;800', 'Poppins': '400;500;600;700;800', 'Montserrat': '400;500;600;700;800', 'Roboto': '400;500;700;900',
@@ -392,6 +392,10 @@ function fieldHTML(f, v, path, mark = '') {
     }
     case 'image':
       return `<div class="f">${lab}<div class="f-img"><div class="thumb" style="background-image:url(&quot;${esc(v)}&quot;)"></div><div class="f-img-r"><input id="${id}" type="text" data-path="${path}" value="${esc(String(v).startsWith('data:') ? '(feltöltött kép)' : v)}" placeholder="Kép URL (https://…)"><label class="btn-s">Kép feltöltése…<input type="file" accept="image/*" data-upload="${path}" hidden></label></div></div></div>`;
+    case 'audio': {
+      const up = String(v || '').startsWith('data:');
+      return `<div class="f">${lab}<div class="f-aud"><input id="${id}" type="text" data-path="${path}" value="${esc(up ? '(feltöltött hang)' : v)}" placeholder="https://… .mp3"><label class="btn-s">Feltöltés…<input type="file" accept="audio/*" data-upload="${path}" data-kind="audio" hidden></label></div></div>`;
+    }
     case 'icon':
       return `<div class="f">${lab}<div class="f-icon"><button type="button" class="ico-prev" data-pick="${path}" title="Ikon választása">${v ? icoHTML(v) : '＋'}</button><input id="${id}" type="text" data-path="${path}" value="${esc(v)}" placeholder="írj be egy emojit, vagy válassz"><button type="button" class="btn-s" data-pick="${path}">Választás…</button></div></div>`;
     case 'note':
@@ -491,6 +495,7 @@ insp.addEventListener('input', e => {
   if (el.dataset.kind === 'cpick') { el.parentElement.querySelector('[data-kind=ctext]').value = v; el.parentElement.classList.remove('auto'); }
   if (el.dataset.kind === 'ctext') { if (/^#[0-9a-f]{6}$/i.test(v)) el.parentElement.querySelector('[data-kind=cpick]').value = v; el.parentElement.classList.toggle('auto', !v); }
   if (el.closest('.f-img') && String(getPath(currentTarget(), path)).startsWith('data:') && v === '(feltöltött kép)') return;
+  if (el.closest('.f-aud') && String(getPath(currentTarget(), path)).startsWith('data:') && v === '(feltöltött hang)') return;
   if (insp.dataset.target === 'page' && el.dataset.kind === 'ctext' && !/^#[0-9a-f]{6}$/i.test(v)) return;   // félig begépelt színkód
   const key = path.split('.').pop();
   if (el.type === 'text' && (key === '_id' || isLinkKey(key))) {   // # / ékezet / szóköz javítása gépelés közben
@@ -526,6 +531,12 @@ insp.addEventListener('change', e => {                   // mező elhagyásakor:
 insp.addEventListener('change', async e => {
   const el = e.target; if (!el.dataset.upload || !el.files[0]) return;
   const file = el.files[0];
+  if (el.dataset.kind === 'audio') {                     // hangfájl: kicsinyítés nincs, méretkorlát van (böngésző tárhely)
+    if (!file.type.startsWith('audio/')) return toast('Ez nem hangfájl.', 'err');
+    if (file.size > 4e6) return toast(`Ez a hangfájl túl nagy (${(file.size / 1e6).toFixed(1)} MB) a böngészőben tároláshoz. Töltsd fel valahova (pl. a tárhelyedre), és a linkjét másold be.`, 'err');
+    const url = await new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(file); });
+    setField(el.dataset.upload, url); renderInspector(); return;
+  }
   if (!file.type.startsWith('image/')) return toast('Ez nem kép fájl.', 'err');
   const url = await readImage(file);
   setField(el.dataset.upload, url);
@@ -605,6 +616,7 @@ function buildHTML() {
   const pg = S.page, fu = fontsUrl(pg);
   const nav = S.blocks.find(b => b.type === 'navbar' && DEVS.some(d => eff(b, d).sticky && !eff(b, d)._hide));
   const gcss = [], body = exportBody(gcss);
+  const hasPlayer = S.blocks.some(b => b.type === 'player'), hasVid = S.blocks.some(b => b.type === 'videos');
   const hasNav = S.blocks.some(b => b.type === 'navbar' && DEVS.some(d => { const e = eff(b, d); return e.over && e.sticky && !e._hide; }));
   const hasAnim = S.blocks.some(b => DEVS.some(d => { const e = eff(b, d); return e._anim !== 'none' && !e._hide; }));
   const navH = nav ? Math.max(...DEVS.map(d => { const e = eff(nav, d); return e._pt + e._pb + 44; })) : 0;
@@ -628,7 +640,7 @@ ${PAGE_CSS.trim()}${gcss.length ? '\n' + gcss.join('\n') : ''}
 <div class="wk-page ${pageCls(pg)}">
 ${body}
 </div>
-${hasAnim || hasNav ? `<script>\n${hasAnim ? `${wkAnimIdx}\n${wkAnimInit}\nwkAnimInit();\n` : ''}${hasNav ? `${wkNavInit}\nwkNavInit();\n` : ''}</script>\n` : ''}</body>
+${hasAnim || hasNav || hasPlayer || hasVid ? `<script>\n${hasPlayer ? `${wkPlayerInit}\nwkPlayerInit();\n` : ''}${hasVid ? `${wkVidInit}\nwkVidInit();\n` : ''}${hasAnim ? `${wkAnimIdx}\n${wkAnimInit}\nwkAnimInit();\n` : ''}${hasNav ? `${wkNavInit}\nwkNavInit();\n` : ''}</script>\n` : ''}</body>
 </html>
 `;
 }
@@ -691,10 +703,11 @@ function makeZip(files) {                       // tömörítés nélküli ("sto
   [[0, 0x06054b50, 4], [8, files.length, 2], [10, files.length, 2], [12, cdSize, 4], [16, off, 4]].forEach(([o, v, n]) => n === 4 ? e.setUint32(o, v, true) : e.setUint16(o, v, true));
   return new Blob([...parts, ...central, e.buffer], { type: 'application/zip' });
 }
-function extractImages(html) {                 // beágyazott (data:) képek → images/kep-1.jpg …
-  const map = new Map(), ext = { jpeg: 'jpg', jpg: 'jpg', png: 'png', gif: 'gif', webp: 'webp', 'svg+xml': 'svg' };
-  const out = html.replace(/data:image\/(png|jpe?g|gif|webp|svg\+xml);base64,[A-Za-z0-9+/=]+/g, (m, t) => {
-    if (!map.has(m)) map.set(m, `images/kep-${map.size + 1}.${ext[t] || 'img'}`);
+function extractImages(html) {                 // beágyazott (data:) képek és hangok → images/kep-1.jpg, audio/hang-1.mp3 …
+  const map = new Map(), cnt = { image: 0, audio: 0 };
+  const ext = { jpeg: 'jpg', jpg: 'jpg', png: 'png', gif: 'gif', webp: 'webp', 'svg+xml': 'svg', mpeg: 'mp3', mp3: 'mp3', wav: 'wav', 'x-wav': 'wav', ogg: 'ogg', aac: 'aac', mp4: 'm4a', 'x-m4a': 'm4a', webm: 'webm', flac: 'flac' };
+  const out = html.replace(/data:(image|audio)\/([a-z0-9.+-]+);base64,[A-Za-z0-9+/=]+/g, (m, kind, t) => {
+    if (!map.has(m)) map.set(m, kind === 'image' ? `images/kep-${++cnt.image}.${ext[t] || 'img'}` : `audio/hang-${++cnt.audio}.${ext[t] || 'mp3'}`);
     return map.get(m);
   });
   const images = [...map].map(([uri, name]) => { const bin = atob(uri.slice(uri.indexOf(',') + 1)), u8 = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i); return { name, data: u8 }; });
@@ -757,12 +770,13 @@ $('#btnHelp').onclick = () => openModal(`<div class="m-h">Hogyan működik?<butt
 <p><b>🎲 Random téma</b> – véletlen, de összeillő színek, betűtípusok, lekerekítés, térközök, elrendezés és animáció. A tartalom nem változik. Nyomd többször; <kbd>Ctrl/⌘ Z</kbd> visszahozza az előzőt.</p>
 <p><b>Horgonyok (menüből ugrás egy szakaszra)</b> – a blokk <i>Horgony (ID)</i> mezőjébe: <code>rolunk</code> (# nélkül), a menüpont linkjébe: <code>#rolunk</code> – a link mezőben legördülő listából is választhatsz. A szerkesztőben a linkek nem ugranak el (hogy a feliratot átírhasd); kipróbálni <kbd>Ctrl/⌘</kbd> + kattintással vagy az Előnézetben lehet.</p>
 <p><b>Átlátszó menü</b> – Menüsor → Megjelenés → <i>Átlátszó menü a nyitókép fölött</i>: a nyitókép a menü alá csúszik; görgetéskor a menü hátteret (és üveghatást) kap.</p>
+<p><b>🎵 Zenészeknek</b> – <i>Zenelejátszó</i> (saját dalok számlistával; hangfájl linkkel vagy feltöltéssel), <i>Hallgasd meg</i> (Spotify, Apple Music, YouTube Music, Deezer, TIDAL, SoundCloud, Bandcamp… gombok), <i>Videóklipek</i> (YouTube klipek rácsban, kattintásra indulnak). Sablon: Új → Zenész / zenekar.</p>
 <p><b>Gombszín</b> – Oldal beállítások → Színek → <i>Gomb</i> (üresen a fő szín), blokkonként: blokk → Megjelenés → Gombok.</p>
 <p><b>Gombok</b> – Oldal beállítások → Gombok: stílus (teli, körvonalas, halvány, árnyékos, színátmenetes), forma, méret, nagybetűs felirat – az oldal összes gombjára.</p>
 <p><b>5. Export</b> – <i>ZIP</i>: index.html + a feltöltött képek külön <code>images</code> mappában (ajánlott), vagy <i>egyetlen HTML fájl</i>, a képek beágyazva. Bármilyen tárhelyre feltölthető (Netlify, GitHub Pages, saját tárhely). A <i>Mentés</i> projekt fájlt készít, amit később újra megnyithatsz.</p>
 <p><kbd>Ctrl/⌘ Z</kbd> visszavonás · <kbd>Ctrl/⌘ Shift Z</kbd> újra · <kbd>Ctrl/⌘ D</kbd> duplikálás · <kbd>Del</kbd> törlés · <kbd>Alt ↑/↓</kbd> mozgatás · <kbd>Esc</kbd> kijelölés megszüntetése · <kbd>Ctrl/⌘ S</kbd> projekt mentése</p>
 <p style="color:var(--ui-tx3)">A munkád automatikusan mentődik ebbe a böngészőbe is.</p>
-<p>📱 <b>Telefonon?</b> Használd a <a href="mobil/" style="color:var(--acc2)">WEBEKI MOBIL</a>-t – ugyanaz a szerkesztő, érintésre tervezve.</p>
+<p>📱 <b>Telefonon?</b> Használd a <a href="mobil/index.html" style="color:var(--acc2)">WEBEKI MOBIL</a>-t – ugyanaz a szerkesztő, érintésre tervezve.</p>
 <p style="color:var(--ui-tx3)">WEBEKI ${VERSION} · ingyenes, nyílt forráskódú (GPL v3) · <a href="https://github.com/Ekidio/webeki" target="_blank" rel="noopener" style="color:var(--acc2)">github.com/Ekidio/webeki</a></p></div>`);
 
 /* ---------------- eszköz nézet ---------------- */
@@ -943,6 +957,8 @@ $('#pageCss').textContent = PAGE_CSS;
 $('#ver').textContent = 'v' + VERSION;
 updScope(); renderLib(); applyPage(); renderCanvas(); renderInspector(); updUndo(); save();
 const IS_MOBILE_UI = document.body.classList.contains('wkm');
-if (typeof wkBrand === 'function') wkBrand();      // EKIDIO családi logó + indító animáció (js/brand.js)
+if (typeof wkBrand === 'function') wkBrand();
+if (typeof wkPlayerInit === 'function') wkPlayerInit();
+if (typeof wkVidInit === 'function') wkVidInit();      // EKIDIO családi logó + indító animáció (js/brand.js)
 if (!IS_MOBILE_UI && matchMedia('(max-width: 760px)').matches)
-  setTimeout(() => toast('📱 Telefonon vagy? <a href="mobil/" style="color:var(--acc2);font-weight:700">Nyisd meg a WEBEKI MOBIL-t</a>'), 600);
+  setTimeout(() => toast('📱 Telefonon vagy? <a href="mobil/index.html" style="color:var(--acc2);font-weight:700">Nyisd meg a WEBEKI MOBIL-t</a>'), 600);

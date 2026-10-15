@@ -365,6 +365,70 @@ ${p.form ? `<form class="wk-form" action="${esc(p.action || 'mailto:' + p.email)
 </div>${p.map && p.address ? `<div class="wk-in"><iframe class="wk-map" src="https://maps.google.com/maps?q=${encodeURIComponent(p.address)}&amp;output=embed" loading="lazy" title="Térkép"></iframe></div>` : ''}`,
   },
 
+  /* ======================= ZENÉSZEKNEK ======================= */
+  player: {
+    btns: false,
+    name: 'Zenelejátszó', cat: 'Zenészeknek', icon: '♫', desc: 'Saját dalok lejátszása, számlistával',
+    fields: [F.title, F.subtitle,
+      { k: 'artist', t: 'text', l: 'Előadó / album' },
+      { k: 'cover', t: 'image', l: 'Borító' },
+      { k: 'tracks', t: 'list', l: 'Dalok', addL: 'Új dal', item: { title: 'Új dal', src: '', len: '' },
+        fields: [{ k: 'title', t: 'text', l: 'Dal címe' }, { k: 'src', t: 'audio', l: 'Hangfájl (MP3)', hint: 'link (https://…) vagy feltöltés; nagyobb fájlhoz inkább linket használj' }, { k: 'len', t: 'text', l: 'Hossz', hint: 'pl. 3:45 (nem kötelező)' }] },
+      { k: 'layout', t: 'select', l: 'Elrendezés', o: [['side', 'Borító balra'], ['top', 'Borító felül']] },
+    ],
+    defaults: {
+      _id: 'zene', title: 'Hallgass bele', subtitle: '', artist: 'WEBEKI BAND · Első album', cover: IMG('webeki-album', 800, 800), layout: 'side',
+      tracks: [
+        { title: 'Első dal', src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', len: '6:12' },
+        { title: 'Második dal', src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3', len: '7:05' },
+        { title: 'Harmadik dal', src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3', len: '5:44' },
+      ],
+    },
+    render: (p, E) => {
+      const ic = d => `<svg class="wk-svg" viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`, f = 'fill="currentColor" stroke="none"';
+      const first = (p.tracks[0] || {}).title || '';
+      return `<div class="wk-in">${head(p, E)}<div class="wkp-box ${p.layout}" data-wkp>
+${p.cover ? `<div class="wkp-cover"><img src="${esc(p.cover)}" alt="${esc(p.artist)}" loading="lazy"></div>` : ''}
+<div class="wkp-main"><div class="wkp-now">${p.artist ? `<small${E('artist')}>${esc(p.artist)}</small>` : ''}<div class="wkp-title">${esc(first)}</div></div>
+<div class="wkp-ctrl"><button type="button" data-a="prev" aria-label="Előző">${ic(`<path ${f} d="M6 5h2.4v14H6zM20 5v14L9.5 12z"/>`)}</button><button type="button" data-a="play" class="wkp-play" aria-label="Lejátszás / szünet"><span class="ic-play">${ic(`<path ${f} d="M8 5.2v13.6L19.5 12z"/>`)}</span><span class="ic-pause">${ic(`<path ${f} d="M7 5h3.6v14H7zM13.4 5H17v14h-3.6z"/>`)}</span></button><button type="button" data-a="next" aria-label="Következő">${ic(`<path ${f} d="M15.6 5H18v14h-2.4zM4 5v14l10.5-7z"/>`)}</button><div class="wkp-bar"><i></i></div><span class="wkp-time">0:00</span></div>
+<ol class="wkp-list">${p.tracks.map((t, i) => `<li data-src="${esc(t.src)}"><span${E(`tracks.${i}.title`)}>${esc(t.title)}</span>${t.len ? `<small>${esc(t.len)}</small>` : ''}</li>`).join('')}</ol></div></div></div>`;
+    },
+  },
+
+  listen: {
+    name: 'Hallgasd meg', cat: 'Zenészeknek', icon: '◉', desc: 'Streaming gombok: Spotify, Apple Music…',
+    fields: [F.title, F.subtitle,
+      { k: 'cover', t: 'image', l: 'Borító (nem kötelező)' },
+      { k: 'items', t: 'list', l: 'Szolgáltatók', addL: 'Új szolgáltató', item: { net: 'spotify', url: 'https://open.spotify.com/', act: 'Lejátszás' },
+        lab: it => (MUSIC[it.net] || {}).n || 'Szolgáltató',
+        fields: [{ k: 'net', t: 'select', l: 'Szolgáltató', o: Object.entries(MUSIC).map(([k, v]) => [k, v.n]) }, { k: 'url', t: 'text', l: 'Link (a dal / album / előadó oldala)' }, { k: 'act', t: 'text', l: 'Felirat a gomb jobb oldalán', hint: 'pl. Lejátszás, Követés, Megvásárlás' }] },
+      { k: 'layout', t: 'select', l: 'Elrendezés', o: [['stack', 'Lista (egymás alatt)'], ['row', 'Sor (egymás mellett)']] },
+      { k: 'look', t: 'select', l: 'Gombok színe', o: [['brand', 'A szolgáltatók saját színei'], ['theme', 'Az oldal gombszíne'], ['outline', 'Körvonalas']] },
+    ],
+    defaults: {
+      _id: 'hallgasd', title: 'Hallgasd meg', subtitle: 'Az új album minden streaming szolgáltatón.', cover: '', layout: 'stack', look: 'brand',
+      items: [['spotify', 'https://open.spotify.com/'], ['applemusic', 'https://music.apple.com/'], ['ytmusic', 'https://music.youtube.com/'], ['deezer', 'https://www.deezer.com/'], ['soundcloud', 'https://soundcloud.com/'], ['bandcamp', 'https://bandcamp.com/']]
+        .map(([net, url]) => ({ net, url, act: 'Lejátszás' })),
+    },
+    render: (p, E) => `<div class="wk-in">${head(p, E)}${p.cover ? `<div class="wkl-cover"><img src="${esc(p.cover)}" alt="" loading="lazy"></div>` : ''}<div class="wkl wkl-${p.layout} ${p.look}">${p.items.filter(it => MUSIC[it.net]).map((it, i) => { const m = MUSIC[it.net]; return `<a class="wkl-btn" href="${esc(it.url || '#')}" target="_blank" rel="noopener" style="--c:${m.c};--t:${m.t}">${svg(m.d)}<b>${m.n}</b>${p.layout === 'stack' && it.act ? `<em${E(`items.${i}.act`)}>${esc(it.act)}</em>` : ''}</a>`; }).join('')}</div></div>`,
+  },
+
+  videos: {
+    name: 'Videóklipek', cat: 'Zenészeknek', icon: '▶', desc: 'YouTube klipek rácsban, kattintásra indul',
+    fields: [F.title, F.subtitle, F.cols,
+      { k: 'items', t: 'list', l: 'Klipek', addL: 'Új klip', item: { url: 'https://www.youtube.com/watch?v=', title: 'Új klip' },
+        fields: [{ k: 'url', t: 'text', l: 'YouTube link (vagy .mp4)' }, { k: 'title', t: 'text', l: 'Cím' }] }],
+    defaults: {
+      _id: 'klipek', title: 'Videóklipek', subtitle: '', cols: '2',
+      items: [['K4DyBUG242c', 'On & On'], ['J2X5mJ3HDYE', 'Invincible'], ['3nQNiWdeH2Q', 'Heroes Tonight'], ['TW9d8vYrVFQ', 'Sky High']]
+        .map(([id, title]) => ({ url: 'https://www.youtube.com/watch?v=' + id, title })),
+    },
+    render: (p, E) => `<div class="wk-in">${head(p, E)}<div class="wk-grid ${gc(p)}">${p.items.map((it, i) => {
+      const id = ytId(it.url), mp4 = !id && /\.(mp4|webm|mov)(\?|$)/i.test(it.url || '');
+      return `<div class="wkv-item"><div class="wkv"${id ? ` data-yt="${id}"` : mp4 ? ` data-mp4="${esc(it.url)}"` : ''} role="button" aria-label="Lejátszás: ${esc(it.title)}">${id ? `<img src="https://i.ytimg.com/vi/${id}/hqdefault.jpg" alt="" loading="lazy">` : ''}<b><svg class="wk-svg" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" d="M8 5.2v13.6L19.5 12z"/></svg></b></div>${it.title ? `<div class="wkv-cap"${E(`items.${i}.title`)}>${esc(it.title)}</div>` : ''}</div>`;
+    }).join('')}</div></div>`,
+  },
+
   /* ======================= EGYÉB ======================= */
   footer: {
     name: 'Lábléc', cat: 'Lábléc & egyéb', icon: '▁', desc: 'Logó, linkek, copyright',
@@ -469,6 +533,61 @@ function wkNavInit() {
   if (!n.length) return;
   function f() { var s = (window.scrollY || document.documentElement.scrollTop) > 10; [].forEach.call(n, function (e) { e.classList.toggle('wk-scrolled', s); }); }
   window.addEventListener('scroll', f, { passive: true }); f();
+}
+/* zenelejátszó: egy közös hangsáv az oldalon, lejátszás/szünet, előző/következő, tekerés, számlista */
+function wkPlayerInit() {
+  if (window.__wkp) return; window.__wkp = 1;
+  var A = new Audio(), cur = null, idx = 0;
+  function fmt(s) { s = Math.floor(s || 0); return Math.floor(s / 60) + ':' + ('0' + s % 60).slice(-2); }
+  function items(p) { return p.querySelectorAll('.wkp-list li'); }
+  function ui() {
+    if (!cur) return;
+    cur.classList.toggle('playing', !A.paused);
+    var li = items(cur);
+    for (var j = 0; j < li.length; j++) li[j].classList.toggle('on', j === idx);
+    var t = cur.querySelector('.wkp-title'); if (t && li[idx]) t.textContent = li[idx].querySelector('span').textContent;
+  }
+  function load(p, i, play) {
+    var li = items(p); if (!li.length) return;
+    idx = (i + li.length) % li.length;
+    if (cur && cur !== p) cur.classList.remove('playing');
+    cur = p; A.src = li[idx].getAttribute('data-src');
+    if (play) A.play().catch(function () { }); ui();
+  }
+  A.addEventListener('timeupdate', function () {
+    if (!cur) return;
+    var b = cur.querySelector('.wkp-bar i'), tm = cur.querySelector('.wkp-time');
+    if (b) b.style.width = (A.duration ? A.currentTime / A.duration * 100 : 0) + '%';
+    if (tm) tm.textContent = fmt(A.currentTime);
+  });
+  A.addEventListener('play', ui); A.addEventListener('pause', ui);
+  A.addEventListener('ended', function () { if (cur && idx < items(cur).length - 1) load(cur, idx + 1, true); else ui(); });
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest || e.target.closest('[data-edit]')) return;           // a szerkesztőben a szöveg átírása ne indítson zenét
+    var t = e.target.closest('[data-wkp] [data-a], [data-wkp] .wkp-list li, [data-wkp] .wkp-bar'); if (!t) return;
+    var p = t.closest('[data-wkp]');
+    if (t.classList.contains('wkp-bar')) { if (cur === p && A.duration) { var r = t.getBoundingClientRect(); A.currentTime = (e.clientX - r.left) / r.width * A.duration; } return; }
+    if (t.tagName === 'LI') { var li = items(p); for (var j = 0; j < li.length; j++) if (li[j] === t) load(p, j, true); return; }
+    var a = t.getAttribute('data-a');
+    if (a === 'play') { if (cur !== p) load(p, 0, true); else if (A.paused) A.play().catch(function () { }); else A.pause(); }
+    if (a === 'next') load(p, (cur === p ? idx : -1) + 1, true);
+    if (a === 'prev') { if (cur === p && A.currentTime > 3) A.currentTime = 0; else load(p, (cur === p ? idx : 1) - 1, true); }
+  });
+}
+/* videóklipek: kattintásra a borítókép helyén elindul a klip (gyors betöltés, nincs előre betöltött lejátszó) */
+function wkVidInit() {
+  if (window.__wkv) return; window.__wkv = 1;
+  document.addEventListener('click', function (e) {
+    var v = e.target.closest && e.target.closest('.wkv[data-yt], .wkv[data-mp4]');
+    if (!v || v.closest('.ed-block')) return;                                  // a szerkesztőben nem indul el
+    var m;
+    if (v.getAttribute('data-yt')) {
+      m = document.createElement('iframe');
+      m.src = 'https://www.youtube-nocookie.com/embed/' + v.getAttribute('data-yt') + '?autoplay=1&rel=0';
+      m.allow = 'autoplay; encrypted-media; picture-in-picture'; m.allowFullscreen = true;
+    } else { m = document.createElement('video'); m.src = v.getAttribute('data-mp4'); m.controls = true; m.autoplay = true; m.playsInline = true; }
+    v.innerHTML = ''; v.appendChild(m); v.removeAttribute('data-yt'); v.removeAttribute('data-mp4');
+  });
 }
 function wkAnimInit() {
   var els = document.querySelectorAll('[data-anim]');
@@ -655,6 +774,53 @@ const PAGE_CSS = `
 .wk-sd.f svg{transform:scaleX(-1)}
 .wk-fade::before{content:"";position:absolute;left:0;right:0;top:0;height:var(--wk-fade);background:linear-gradient(to bottom,var(--wk-fadec),transparent);pointer-events:none}
 .wk-pull>.wk-in:not(.wk-in~.wk-in){margin-top:var(--wk-pull)}
+/* zenelejátszó */
+.wkp-box{display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:34px;align-items:start;background:rgba(127,127,127,.08);border-radius:calc(var(--wk-radius)*1.6);padding:28px;max-width:960px;margin:0 auto}
+.wkp-box.top{grid-template-columns:minmax(0,1fr);max-width:560px}
+.wkp-cover img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:calc(var(--wk-radius)*1.2);box-shadow:0 20px 44px -20px rgba(0,0,0,.55)}
+.wkp-now small{display:block;opacity:.6;text-transform:uppercase;letter-spacing:.12em;font-size:12px;font-weight:700}
+.wkp-title{font-family:var(--wk-head,var(--wk-font));font-size:26px;font-weight:800;line-height:1.2;margin:6px 0 18px}
+.wkp-ctrl{display:flex;align-items:center;gap:8px}
+.wkp-ctrl button{all:unset;cursor:pointer;width:42px;height:42px;flex:none;display:grid;place-items:center;border-radius:50%;color:inherit;transition:background .2s,transform .2s}
+.wkp-ctrl button:hover{background:rgba(127,127,127,.15)}
+.wkp-ctrl .wkp-play{width:56px;height:56px;background:var(--wk-btn,var(--wk-primary));color:var(--wk-onb,var(--wk-onp,#fff))}
+.wkp-ctrl .wkp-play:hover{background:var(--wk-btn,var(--wk-primary));transform:scale(1.06)}
+.wkp-ctrl .wk-svg{width:20px;height:20px}.wkp-play .wk-svg{width:24px;height:24px}
+.wkp-box .ic-pause{display:none}.wkp-box.playing .ic-pause{display:block}.wkp-box.playing .ic-play{display:none}
+.wkp-bar{flex:1;height:6px;margin-left:6px;border-radius:3px;background:rgba(127,127,127,.25);cursor:pointer;position:relative;overflow:hidden}
+.wkp-bar i{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--wk-primary);border-radius:3px}
+.wkp-time{font-variant-numeric:tabular-nums;font-size:13px;opacity:.7;min-width:40px;text-align:right}
+.wkp-list{list-style:none;margin:22px 0 0;padding:0;display:grid;gap:2px;counter-reset:wkt}
+.wkp-list li{display:flex;gap:12px;align-items:center;padding:11px 12px;border-radius:var(--wk-radius);cursor:pointer;counter-increment:wkt}
+.wkp-list li::before{content:counter(wkt);width:18px;opacity:.45;font-variant-numeric:tabular-nums;font-size:14px}
+.wkp-list li:hover{background:rgba(127,127,127,.12)}
+.wkp-list li.on{background:color-mix(in srgb,var(--wk-primary) 14%,transparent);color:var(--wk-primary);font-weight:700}
+.wkp-list li span{flex:1}.wkp-list li small{opacity:.6;font-variant-numeric:tabular-nums}
+/* hallgasd meg */
+.wk-listen .wk-in{max-width:880px}
+.wkl-cover img{width:min(240px,70%);aspect-ratio:1;object-fit:cover;border-radius:calc(var(--wk-radius)*1.4);margin:0 auto 30px;box-shadow:0 20px 44px -20px rgba(0,0,0,.55)}
+.wkl-stack{display:grid;gap:12px;max-width:520px;margin:0 auto}
+.wkl-row{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+.wkl-btn{display:flex;align-items:center;gap:12px;padding:12px 20px;border-radius:var(--wk-btn-r,var(--wk-radius));text-decoration:none;background:var(--c);color:var(--t,#fff);border:2px solid var(--c);transition:transform .2s,filter .2s,box-shadow .2s}
+.wkl-btn:hover{transform:translateY(-2px);filter:brightness(1.07);box-shadow:0 12px 26px -12px var(--c)}
+.wkl-btn .wk-svg{width:24px;height:24px;flex:none}
+.wkl-btn b{font-weight:700}
+.wkl-stack .wkl-btn{padding:15px 20px}
+.wkl-btn em{margin-left:auto;font-style:normal;font-weight:600;font-size:14px;opacity:.85}
+.wkl.theme .wkl-btn{--c:var(--wk-btn,var(--wk-primary));--t:var(--wk-onb,var(--wk-onp,#fff))}
+.wkl.outline .wkl-btn{background:transparent;color:inherit;border-color:rgba(127,127,127,.35)}
+.wkl.outline .wkl-btn .wk-svg{color:var(--c)}
+.wkl.outline .wkl-btn:hover{border-color:var(--c);box-shadow:none}
+/* videóklipek */
+.wkv{position:relative;aspect-ratio:16/9;border-radius:calc(var(--wk-radius)*1.4);overflow:hidden;background:#000;cursor:pointer}
+.wkv img{width:100%;height:100%;object-fit:cover;transition:transform .5s,opacity .3s}
+.wkv:hover img{transform:scale(1.04);opacity:.85}
+.wkv b{position:absolute;inset:0;margin:auto;width:68px;height:48px;border-radius:14px;background:rgba(0,0,0,.65);display:grid;place-items:center;color:#fff;transition:background .2s}
+.wkv b .wk-svg{width:26px;height:26px}
+.wkv:hover b{background:#ff0033}
+.wkv iframe,.wkv video{position:absolute;inset:0;width:100%;height:100%;border:0}
+.wkv-cap{margin-top:12px;font-weight:700}
+@container (max-width:700px){.wkp-box{grid-template-columns:minmax(0,1fr);padding:20px}.wkp-cover{max-width:300px}}
 /* elválasztó */
 .wk-spacer hr{border:0;border-top:1px solid rgba(127,127,127,.25);margin:0 auto;max-width:1140px}
 /* reszponzív – a konténer szélességéhez igazodik */
@@ -684,5 +850,6 @@ const TEMPLATES = {
   landing: { n: 'Termék landing', d: 'Hero, jellemzők, árak, vélemények, GYIK', blocks: ['navbar', 'hero', 'features', 'imageText', 'stats', 'testimonials', 'pricing', 'faq', 'cta', 'footer'] },
   business: { n: 'Cégbemutató', d: 'Rólunk, szolgáltatások, csapat, kapcsolat', blocks: ['navbar', ['hero', { align: 'left' }], 'imageText', ['features', { look: 'plain', align: 'center' }], 'team', ['contact', { map: true }], 'footer'] },
   portfolio: { n: 'Portfólió', d: 'Galéria, bemutatkozás, videó', blocks: ['navbar', ['hero', { title: 'Szia, én\nfotós vagyok.', height: 70 }], 'gallery', ['text', { align: 'center' }], 'video', 'contact', 'footer'] },
+  band: { n: 'Zenész / zenekar', d: 'Lejátszó, streaming gombok, klipek', blocks: [['navbar', { logo: 'WEBEKI BAND', links: [{ label: 'Zene', href: '#zene' }, { label: 'Hallgasd', href: '#hallgasd' }, { label: 'Klipek', href: '#klipek' }, { label: 'Kapcsolat', href: '#kapcsolat' }], btnText: 'Booking', btnHref: '#kapcsolat', over: true, _fg: '#ffffff' }], ['hero', { title: 'Új album\nmost megjelent', text: 'Hallgasd meg az új dalokat, nézd meg a klipeket, és gyere el a koncertekre!', btn1Text: 'Hallgasd meg', btn1Href: '#zene', btn2Text: 'Klipek', btn2Href: '#klipek', _bgImg: IMG('webeki-concert', 1920, 1100), height: 90 }], 'player', 'listen', 'videos', ['gallery', { title: 'Fotók', subtitle: '' }], ['contact', { title: 'Booking és kapcsolat', text: 'Fellépés, interjú, együttműködés – írj nekünk!' }], 'footer'] },
   blank: { n: 'Üres oldal', d: 'Kezdd a nulláról', blocks: [] },
 };
