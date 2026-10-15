@@ -9,7 +9,8 @@ body.wkm{font-size:14px}
 .wkm #top{height:calc(var(--top-h) + var(--safe-t));padding:var(--safe-t) 8px 0;gap:6px}
 .wkm .brand{gap:7px;margin-right:0;font-size:14px;min-width:0}
 .wkm .brand .bt{white-space:nowrap}
-.wkm .brand .bt b{color:var(--acc2);font-weight:800}
+.wkm .brand .bt b{color:var(--acc2);font-weight:800;font-size:11px;letter-spacing:.12em;border:1px solid var(--acc2);border-radius:5px;padding:2px 5px}
+.wkm .brand-logo{height:21px}
 .wkm .brand small{display:none}
 .wkm .grp button{padding:7px 8px}
 .mbtn{border:1px solid var(--ui-line);background:var(--ui-bg);border-radius:8px;width:38px;height:36px;display:grid;place-items:center;color:var(--ui-tx2)}
@@ -42,8 +43,7 @@ body[data-sheet=peek] #stage{padding-bottom:70px}
 .wkm .ed-tools [data-act=drag]{display:none}
 .wkm .ed-tools .ed-name{max-width:110px;overflow:hidden;text-overflow:ellipsis}
 .wkm .ed-block:hover::after{outline-color:transparent}
-.wkm .ed-block.sel::after{outline-color:var(--acc)}
-.wkm.only .ed-block.sel::after{outline-color:var(--only)}
+.wkm .ed-block.sel::after{outline-color:var(--sel)}
 .wkm .ed-block:hover>.ed-tools{opacity:0;pointer-events:none}
 .wkm .ed-block.sel>.ed-tools{opacity:1;pointer-events:auto}
 

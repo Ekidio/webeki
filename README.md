@@ -109,6 +109,10 @@ Blokk → **Megjelenés → Animáció**: válaszd ki a típusát, és állítsd
 - A **Szolgáltatások** elemeinél a **Választás…** gombbal emoji vagy rajzolt ikon választható. A rajzolt ikon a fő színt veszi fel. Emojit be is írhatsz a mezőbe.
 - A **Menüsor**, a **Kapcsolat** és a **Lábléc** blokkban a **Közösségi oldalak** listában add meg a profiljaid linkjét; az ikonok stílusa (csak ikon, kör, négyzet) állítható.
 
+### 🎨 Random színek
+
+Oldal beállítások → Színek → **🎨 Random színek**: csak a színeket keveri újra (fő szín, szöveg, háttér, gomb, és a téma által adott szekció-árnyalatok). A betűtípus, a méretek, a gombstílus, az elrendezés és az animáció marad, a világos vagy sötét jelleg is. Tipp: nyomogasd a 🎲 Random témát, amíg egy stílus megtetszik, aztán a 🎨 Random színekkel keress hozzá színeket.
+
 ### 🎲 Random téma
 
 A felső sávban (vagy az Oldal beállításokban) a **Random téma** gomb véletlen, de összeillő színeket, betűtípus-párt, lekerekítést, térközöket, váltakozó szekció hátteret, elrendezést és animációt választ. A szövegek és képek nem változnak. Nyomd meg többször, amíg tetszik; a **Ctrl/⌘ + Z** visszahozza az előzőt. A gombok szövegszíne (fehér vagy sötét) mindig a fő színhez igazodik, hogy olvasható maradjon.
@@ -146,6 +150,7 @@ Sima HTML, CSS és JavaScript. Nincs build lépés, nincs függőség.
 |---|---|
 | `index.html` | a szerkesztő váza |
 | `css/editor.css` | a szerkesztő felület stílusa |
+| `js/brand.js` | a WEBEKI logó (az EKIDIO család stílusában: STEMEKI, VIDEKI, CHORDEKI) és az indító animáció |
 | `js/icons.js` | rajzolt ikonok, közösségi ikonok, emoji készlet |
 | `js/blocks.js` | **blokk könyvtár**: minden modul mezői, alapértékei, HTML-je, a generált oldal CSS-e (`PAGE_CSS`) és a sablonok |
 | `js/app.js` | szerkesztő logika: húzás, kijelölés, paraméter panel, nézetek, visszavonás, mentés, export |

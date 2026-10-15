@@ -9,7 +9,7 @@ const getPath = (o, p) => p.split('.').reduce((a, k) => a?.[k], o);
 const setPath = (o, p, v) => { const ks = p.split('.'), last = ks.pop(); ks.reduce((a, k) => a[k], o)[last] = v; };
 
 // kiadáskor az index.html ?v= jeleit is emeld (böngésző gyorsítótár)
-const VERSION = '1.2';
+const VERSION = '1.3';
 const LS_KEY = 'webeki.project.v1';
 const FONTS = {
   'Inter': '400;500;600;700;800', 'Poppins': '400;500;600;700;800', 'Montserrat': '400;500;600;700;800', 'Roboto': '400;500;700;900',
@@ -246,7 +246,7 @@ function delBlock(id) {
   snap(); S.blocks.splice(i, 1);
   if (sel === id) sel = null;
   renderCanvas(); renderInspector(); save();
-  toast(`Blokk törölve – <a href="#" onclick="undo();return false" style="color:#9d86ff">Visszavonás</a>`);
+  toast(`Blokk törölve – <a href="#" onclick="undo();return false" style="color:var(--acc2)">Visszavonás</a>`);
 }
 
 /* vászon események */
@@ -442,7 +442,7 @@ function renderInspector() {
     insp.dataset.target = 'page';
     insp.innerHTML = `<div class="panel-h"><span class="ph-t">⚙ Oldal beállítások</span></div><div class="insp-body">${scope === 'only' ? scopeBar(null) : ''}
 <div class="hint"><b>Tipp:</b> kattints egy blokkra a vásznon a paraméterei szerkesztéséhez, vagy közvetlenül a szövegre, hogy átírd.</div>
-<div class="sec"><div class="sec-h">Színek <button type="button" class="btn-s rnd" data-random title="Véletlen színek, betűtípus és elrendezés – Ctrl+Z visszavonja">🎲 Random téma</button></div><div class="ctiles">${PAGE_COLORS.map(c => { const v = S.page[c.k], shown = v || S.page[c.auto] || '#000000'; return `<div class="ctile${c.auto && !v ? ' auto' : ''}" title="Kattints a színre a választáshoz"><input type="color" data-path="${c.k}" data-kind="cpick" value="${esc(shown)}" aria-label="${c.l}"><b>${c.l}${c.auto && v ? `<button type="button" class="ct-rst" data-cclear="${c.k}" title="Vissza: a fő színnel egyezik">↺</button>` : ''}</b><small>${c.d}</small><input type="text" data-path="${c.k}" data-kind="ctext" value="${esc(v)}" placeholder="${c.auto ? 'fő szín' : ''}" spellcheck="false" maxlength="7"></div>`; }).join('')}</div></div>
+<div class="sec"><div class="sec-h">Színek <button type="button" class="btn-s rnd" data-rcolors title="Csak a színek változnak – a betűtípus, a méretek és az elrendezés marad. Ctrl+Z visszavonja">🎨 Random színek</button></div><div class="ctiles">${PAGE_COLORS.map(c => { const v = S.page[c.k], shown = v || S.page[c.auto] || '#000000'; return `<div class="ctile${c.auto && !v ? ' auto' : ''}" title="Kattints a színre a választáshoz"><input type="color" data-path="${c.k}" data-kind="cpick" value="${esc(shown)}" aria-label="${c.l}"><b>${c.l}${c.auto && v ? `<button type="button" class="ct-rst" data-cclear="${c.k}" title="Vissza: a fő színnel egyezik">↺</button>` : ''}</b><small>${c.d}</small><input type="text" data-path="${c.k}" data-kind="ctext" value="${esc(v)}" placeholder="${c.auto ? 'fő szín' : ''}" spellcheck="false" maxlength="7"></div>`; }).join('')}</div></div>
 <div class="sec"><div class="sec-h">Téma és SEO</div>${PAGE_FIELDS.map(f => fieldHTML(f, S.page[f.k], f.k)).join('')}<div style="height:8px"></div></div>
 <div class="sec"><div class="sec-h">Gombok <span class="sec-tag">az oldal összes gombja</span></div>${BTN_FIELDS.map(f => fieldHTML(f, S.page[f.k], f.k)).join('')}<div class="f"><small class="f-hint0">A második („Tudj meg többet”) gombok mindig körvonalasak maradnak, hogy a fő gomb kiemelkedjen.</small></div></div>
 <div class="sec"><div class="sec-h">Animáció minden blokkra</div><div class="f anim-all"><select id="animAll">${COMMON_FIELDS.find(f => f.k === '_anim').o.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select><button type="button" class="btn-s" data-animall>Alkalmaz</button></div><div class="f"><small class="f-hint0">Utána blokkonként is átállítható: blokk → Megjelenés → Animáció.</small></div></div>
@@ -542,6 +542,7 @@ insp.addEventListener('click', e => {
   if (pk) { openPicker(pk.dataset.pick, pk); return; }
   if (t.closest('[data-play]')) { const b = getB(sel); if (b && eff(b)._anim !== 'none') playAnim(b.id); else toast('Előbb válassz egy animációt.'); return; }
   if (t.closest('[data-random]')) { randomTheme(); return; }
+  if (t.closest('[data-rcolors]')) { randomColors(); return; }
   if (t.closest('[data-animall]')) {
     const v = $('#animAll').value; snap();
     S.blocks.forEach(b => { if (b.type === 'navbar') return; b.p._anim = v; DEVS.forEach(d => { if (b.r?.[d]) delete b.r[d]._anim; }); });
@@ -749,10 +750,11 @@ $('#btnHelp').onclick = () => openModal(`<div class="m-h">Hogyan működik?<butt
 <p><b>1. Blokkok</b> – húzd a bal oldali modulokat az oldalra, vagy kattints rájuk. A vásznon a blokk jobb felső sarkában: áthelyezés ⠿, fel/le, duplikálás, törlés.</p>
 <p><b>2. Paraméterezés</b> – kattints egy blokkra: jobb oldalt megjelennek a beállításai (szövegek, képek, színek, oszlopok, térköz, listaelemek). Üres területre kattintva az <i>oldal beállításait</i> látod (3 alapszín, betűtípus, SEO).</p>
 <p><b>3. Közvetlen szerkesztés</b> – a szövegekre kattintva helyben is átírhatod őket.</p>
-<p><b>4. Nézetek</b> – fent válthatsz asztali / tablet / mobil nézet között. A <b>tartalom</b> (szövegek, képek, linkek, listaelemek, blokkok hozzáadása/törlése/sorrendje) mindig <b>minden nézetben közös</b>. A <b>megjelenés</b> (igazítás, oszlopok, elrendezés, színek, térközök, elrejtés) nézetenként is állítható: <b style="color:#9d86ff">🔗 Minden nézet</b> – mindhárom nézetben változik; <b style="color:#f59e0b">📌 Csak ez a nézet</b> – csak az aktuálisban (narancs jelzi). Az eltérő mezők mellett <b>D/T/M</b> jelölés, a ↺ visszaállítja a közös értékre. Pl. asztalin balra, mobilon középre igazított ikonok. Billentyű: <kbd>L</kbd></p>
+<p><b>4. Nézetek</b> – fent válthatsz asztali / tablet / mobil nézet között. A <b>tartalom</b> (szövegek, képek, linkek, listaelemek, blokkok hozzáadása/törlése/sorrendje) mindig <b>minden nézetben közös</b>. A <b>megjelenés</b> (igazítás, oszlopok, elrendezés, színek, térközök, elrejtés) nézetenként is állítható: <b style="color:var(--acc2)">🔗 Minden nézet</b> – mindhárom nézetben változik; <b style="color:#f59e0b">📌 Csak ez a nézet</b> – csak az aktuálisban (narancs jelzi). Az eltérő mezők mellett <b>D/T/M</b> jelölés, a ↺ visszaállítja a közös értékre. Pl. asztalin balra, mobilon középre igazított ikonok. Billentyű: <kbd>L</kbd></p>
 <p><b>Animáció</b> – blokk → Megjelenés → Animáció: típus (beúszás, előtűnés, nagyítás, billenés), időtartam, késleltetés, lépcsőzetes megjelenés. ▶ Lejátszás: kipróbálás. Minden blokkra egyszerre: Oldal beállítások → Animáció minden blokkra.</p>
 <p><b>Ikonok</b> – a Szolgáltatások elemeinél a <i>Választás…</i> gomb: emoji vagy rajzolt ikon (a rajzolt ikon a fő színt veszi fel). Emojit be is írhatsz. <b>Közösségi ikonok</b>: menüsor, kapcsolat és lábléc blokk → Közösségi oldalak.</p>
 <p><b>Blokkok összekapcsolása</b> – Megjelenés → Háttér: <i>Folytatja az előző blokk hátterét</i> (több blokk egy közös háttéren). Határ a szomszéd blokkokkal: formázott határvonal (hullám, ív, ferde, csúcs, cikcakk), lágy átmenet, átlógás.</p>
+<p><b>🎨 Random színek</b> – Oldal beállítások → Színek: csak a színeket keveri újra, a betűtípus, a méretek, a gombstílus és az elrendezés marad. Jól jön, ha egy Random téma stílusa tetszik, csak a színei nem.</p>
 <p><b>🎲 Random téma</b> – véletlen, de összeillő színek, betűtípusok, lekerekítés, térközök, elrendezés és animáció. A tartalom nem változik. Nyomd többször; <kbd>Ctrl/⌘ Z</kbd> visszahozza az előzőt.</p>
 <p><b>Horgonyok (menüből ugrás egy szakaszra)</b> – a blokk <i>Horgony (ID)</i> mezőjébe: <code>rolunk</code> (# nélkül), a menüpont linkjébe: <code>#rolunk</code> – a link mezőben legördülő listából is választhatsz. A szerkesztőben a linkek nem ugranak el (hogy a feliratot átírhasd); kipróbálni <kbd>Ctrl/⌘</kbd> + kattintással vagy az Előnézetben lehet.</p>
 <p><b>Átlátszó menü</b> – Menüsor → Megjelenés → <i>Átlátszó menü a nyitókép fölött</i>: a nyitókép a menü alá csúszik; görgetéskor a menü hátteret (és üveghatást) kap.</p>
@@ -872,22 +874,30 @@ function hsl(h, s, l) {
   const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1));
   return '#' + [f(0), f(8), f(4)].map(x => Math.round(x * 255).toString(16).padStart(2, '0')).join('');
 }
+/* összeillő színek egy véletlen alapszínből (h); a fő szín mindig jól olvasható a háttéren */
+function makePalette(h, dark) {
+  const c = dark
+    ? { primary: hsl(h, rint(70, 90), rint(60, 68)), text: hsl(h, 14, 90), bg: hsl(h, rint(18, 30), rint(6, 9)) }
+    : { primary: hsl(h, rint(65, 88), rint(40, 50)), text: hsl(h, rint(20, 35), rint(10, 16)), bg: Math.random() < .5 ? '#ffffff' : hsl(h, rint(25, 45), rint(97, 99)) };
+  for (let l = 48; !dark && contrast(c.primary, c.bg) < 3.6 && l > 20; l -= 3) c.primary = hsl(h, 80, l);
+  c.accent = hsl((h + rint(150, 210)) % 360, rint(70, 90), dark ? 62 : 46);     // kiegészítő gombszín
+  c.tint = dark ? hsl(h, rint(18, 28), rint(10, 13)) : hsl(h, rint(30, 55), rint(94, 97));   // váltakozó szekció háttér
+  c.shade = hsl(h, 60, 12);                                                      // sötét fedőszín a képeken
+  return c;
+}
 function randomTheme() {
   snap();
-  const h = rint(0, 359), dark = Math.random() < .2, [font, headFont] = rnd(FONT_PAIRS);
-  Object.assign(S.page, dark
-    ? { primary: hsl(h, rint(70, 90), rint(60, 68)), text: hsl(h, 14, 90), bg: hsl(h, rint(18, 30), rint(6, 9)) }
-    : { primary: hsl(h, rint(65, 88), rint(40, 50)), text: hsl(h, rint(20, 35), rint(10, 16)), bg: Math.random() < .5 ? '#ffffff' : hsl(h, rint(25, 45), rint(97, 99)) },
-    { font, headFont, radius: rnd([0, 4, 8, 12, 16, 24]), btn: Math.random() < .3 ? hsl((h + rint(150, 210)) % 360, rint(70, 90), dark ? 62 : 46) : '', btnStyle: rnd(['solid', 'solid', 'outline', 'soft', 'shadow', 'gradient']), btnShape: rnd(['theme', 'theme', 'pill', 'square', 'round']), btnUpper: Math.random() < .2 });
-  for (let l = 48; !dark && contrast(S.page.primary, S.page.bg) < 3.6 && l > 20; l -= 3) S.page.primary = hsl(h, 80, l);
-  const tint = dark ? hsl(h, rint(18, 28), rint(10, 13)) : hsl(h, rint(30, 55), rint(94, 97));
+  const h = rint(0, 359), dark = Math.random() < .2, [font, headFont] = rnd(FONT_PAIRS), pal = makePalette(h, dark);
+  Object.assign(S.page, { primary: pal.primary, text: pal.text, bg: pal.bg },
+    { font, headFont, radius: rnd([0, 4, 8, 12, 16, 24]), btn: Math.random() < .3 ? pal.accent : '', btnStyle: rnd(['solid', 'solid', 'outline', 'soft', 'shadow', 'gradient']), btnShape: rnd(['theme', 'theme', 'pill', 'square', 'round']), btnUpper: Math.random() < .2 });
+  const tint = pal.tint;
   const alt = rnd([0, 1, -1]), pad = rnd([72, 88, 104, 120]);
   const anim = rnd(['none', 'up', 'up', 'fade', 'zoom', 'left', 'flip']), heroAlign = rnd(['center', 'left']), soc = rnd(['plain', 'circle', 'square']);
   let right = Math.random() < .5, k = 0;
   S.blocks.forEach(b => {
     const p = b.p, t = b.type;
     if (!['navbar', 'hero', 'cta', 'footer', 'spacer', 'html'].includes(t)) { p._pt = p._pb = pad; if (p._bgType !== 'image') p._bgType = 'color'; p._bg = alt >= 0 && k++ % 2 === alt ? tint : ''; p._fg = ''; }
-    if (t === 'hero') Object.assign(p, { align: heroAlign, _bgOv: rint(35, 70), _bgOvC: Math.random() < .3 ? hsl(h, 60, 12) : '', height: rnd([70, 80, 90]) });
+    if (t === 'hero') Object.assign(p, { align: heroAlign, _bgOv: rint(35, 70), _bgOvC: Math.random() < .3 ? pal.shade : '', height: rnd([70, 80, 90]) });
     if (t === 'hero') Object.assign(p, { _divBot: rnd(['none', 'none', 'wave', 'curve', 'slant', 'arc']), _divBotH: rnd([48, 64, 80, 100]), _divBotC: '' });
     if (t === 'cta') Object.assign(p, Math.random() < .5 ? { _bgType: 'gradient', _gKind: rnd(['linear', 'linear', 'radial']), _g1: '', _g2: '', _gAng: rnd([90, 120, 135, 160, 200]), _gMid: rint(35, 65) } : { _bgType: 'color', _bg: '' });
     if (t === 'features') Object.assign(p, { look: rnd(['card', 'plain']), align: rnd(['left', 'center']) });
@@ -902,6 +912,28 @@ function randomTheme() {
 }
 $('#btnRandom').onclick = randomTheme;
 
+/* 🎨 csak a színek: betűk, méretek, gombstílus, elrendezés, animáció marad.
+   A világos/sötét jelleg megmarad; a téma által adott színezések (szekció árnyalat, gombszín,
+   képfedő szín) az új színekhez igazodnak, a kézzel megadott egyéb blokkszínek nem változnak. */
+function randomColors() {
+  snap();
+  const old = { ...S.page }, oldTint = new Set(), dark = lum(S.page.bg) < .2;
+  const pal = makePalette(rint(0, 359), dark);
+  Object.assign(S.page, { primary: pal.primary, text: pal.text, bg: pal.bg, btn: old.btn ? pal.accent : '' });
+  S.blocks.forEach(b => {
+    const p = b.p;
+    if (!['navbar', 'hero', 'cta', 'footer', 'spacer', 'html'].includes(b.type) && p._bgType === 'color' && p._bg) oldTint.add(p._bg);
+  });
+  const tintMain = oldTint.size === 1 ? [...oldTint][0] : null;      // a random téma egyféle árnyalatot használ
+  S.blocks.forEach(b => {
+    const p = b.p;
+    if (tintMain && p._bg === tintMain && p._bgType === 'color') p._bg = pal.tint;
+    if (b.type === 'hero' && p._bgOvC) p._bgOvC = pal.shade;
+  });
+  applyPage(); renderCanvas(); renderInspector(); save();
+  toast(`🎨 Új színek (${dark ? 'sötét' : 'világos'}) – a betűk, a méretek és az elrendezés maradtak. Nyomd újra, Ctrl+Z visszahozza az előzőt.`);
+}
+
 /* ---------------- toast ---------------- */
 function toast(html, type = '') {
   const t = document.createElement('div'); t.className = 'toast ' + type; t.innerHTML = html;
@@ -913,5 +945,6 @@ $('#pageCss').textContent = PAGE_CSS;
 $('#ver').textContent = 'v' + VERSION;
 updScope(); renderLib(); applyPage(); renderCanvas(); renderInspector(); updUndo(); save();
 const IS_MOBILE_UI = document.body.classList.contains('wkm');
+if (typeof wkBrand === 'function') wkBrand();      // EKIDIO családi logó + indító animáció (js/brand.js)
 if (!IS_MOBILE_UI && matchMedia('(max-width: 760px)').matches)
-  setTimeout(() => toast('📱 Telefonon vagy? <a href="mobil/" style="color:#9d86ff;font-weight:700">Nyisd meg a WEBEKI MOBIL-t</a>'), 600);
+  setTimeout(() => toast('📱 Telefonon vagy? <a href="mobil/" style="color:var(--acc2);font-weight:700">Nyisd meg a WEBEKI MOBIL-t</a>'), 600);
