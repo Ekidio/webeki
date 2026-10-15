@@ -35,7 +35,6 @@
     _addBlock(type, index);
     setSheet('lib', 'closed');
     setSheet('insp', 'peek');
-    toast('Blokk hozzáadva – koppints rá a beállításokhoz.');
   };
   const _delBlock = delBlock;
   delBlock = function (id) { _delBlock(id); if (!sel) setSheet('insp', 'closed'); };

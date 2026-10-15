@@ -530,7 +530,6 @@ insp.addEventListener('change', async e => {
   const url = await readImage(file);
   setField(el.dataset.upload, url);
   renderInspector();
-  toast('Kép feltöltve – a projektbe és az exportált HTML-be ágyazva.');
 });
 
 insp.addEventListener('click', e => {
@@ -546,7 +545,7 @@ insp.addEventListener('click', e => {
   if (t.closest('[data-animall]')) {
     const v = $('#animAll').value; snap();
     S.blocks.forEach(b => { if (b.type === 'navbar') return; b.p._anim = v; DEVS.forEach(d => { if (b.r?.[d]) delete b.r[d]._anim; }); });
-    renderCanvas(); save(); toast(v === 'none' ? 'Animáció kikapcsolva minden blokkon.' : 'Animáció beállítva minden blokkra (a menüsor kivételével).');
+    renderCanvas(); save();
     if (v !== 'none') S.blocks.forEach((b, i) => setTimeout(() => playAnim(b.id), 0));
     return;
   }
@@ -554,7 +553,7 @@ insp.addEventListener('click', e => {
   if (ovr) { e.preventDefault(); const b = getB(sel); snap(); delete b.r[curDev()][ovr.dataset.ovreset]; if (!ovCount(b, curDev())) delete b.r[curDev()]; refreshBlock(b.id); renderInspector(); save(); return; }
   const sc = t.closest('.scope-sw [data-scope]');
   if (sc) { setScope(sc.dataset.scope); return; }
-  if (t.closest('[data-ovresetall]')) { const b = getB(sel); snap(); delete b.r[curDev()]; refreshBlock(b.id); renderInspector(); save(); toast(`Eltérések törölve – ${DEV_N[curDev()]} nézet most a közös értékeket mutatja.`); return; }
+  if (t.closest('[data-ovresetall]')) { const b = getB(sel); snap(); delete b.r[curDev()]; refreshBlock(b.id); renderInspector(); save(); return; }
   const go = t.closest('[data-goto]');
   if (go) { select(go.dataset.goto, true); return; }
   const ba = t.closest('[data-bact]');
@@ -724,12 +723,12 @@ $('#btnPreview').onclick = () => {
   const w = window.open(URL.createObjectURL(new Blob([buildHTML()], { type: 'text/html' })), '_blank');
   if (!w) toast('A böngésző blokkolta az új ablakot – engedélyezd a felugró ablakokat.', 'err');
 };
-function saveProject() { download(slug(S.page.title) + '.webeki.json', JSON.stringify(S, null, 1), 'application/json'); toast('Projekt elmentve fájlba.'); }
+function saveProject() { download(slug(S.page.title) + '.webeki.json', JSON.stringify(S, null, 1), 'application/json');  }
 $('#btnSave').onclick = saveProject;
 $('#btnOpen').onclick = () => $('#fileOpen').click();
 $('#fileOpen').onchange = async e => {
   const f = e.target.files[0]; e.target.value = ''; if (!f) return;
-  try { const s = normalize(JSON.parse(await f.text())); snap(); S = s; sel = null; refreshAll(); toast('Projekt betöltve.'); }
+  try { const s = normalize(JSON.parse(await f.text())); snap(); S = s; sel = null; refreshAll(); }
   catch (err) { toast('Hibás projekt fájl.', 'err'); }
 };
 
@@ -741,7 +740,7 @@ modal.addEventListener('click', e => {
   const ex = e.target.closest('[data-exp]');
   if (ex) { modal.hidden = true; ex.dataset.exp === 'zip' ? exportZip() : exportHTML(); return; }
   const t = e.target.closest('[data-tpl]');
-  if (t) { snap(); S = fromTemplate(t.dataset.tpl); sel = null; modal.hidden = true; refreshAll(); $('#stage').scrollTop = 0; toast('Új oldal létrehozva. (Ctrl+Z visszahozza az előzőt)'); }
+  if (t) { snap(); S = fromTemplate(t.dataset.tpl); sel = null; modal.hidden = true; refreshAll(); $('#stage').scrollTop = 0; }
 });
 $('#btnNew').onclick = () => openModal(`<div class="m-h">Új oldal – válassz kiinduló sablont<button data-m="x">✕</button></div>
 <div class="tpl-grid">${Object.entries(TEMPLATES).map(([k, t]) => `<button class="tpl" data-tpl="${k}"><div class="tpl-prev">${t.blocks.map(x => { const ty = Array.isArray(x) ? x[0] : x; return `<i class="${ty === 'hero' ? 'hero' : ty === 'footer' ? 'dark' : ''}">${esc(BLOCKS[ty].name)}</i>`; }).join('') || '<span class="none">üres</span>'}</div><b>${t.n}</b><small>${t.d}</small></button>`).join('')}</div>
@@ -908,7 +907,6 @@ function randomTheme() {
   });
   applyPage(); renderCanvas(); renderInspector(); save();
   if (anim !== 'none') S.blocks.forEach(b => playAnim(b.id));
-  toast(`🎲 Új téma: <b>${font}${headFont ? ' + ' + headFont : ''}</b> · ${dark ? 'sötét' : 'világos'} – nyomd újra egy másikért, Ctrl+Z visszahozza az előzőt`);
 }
 $('#btnRandom').onclick = randomTheme;
 
@@ -931,11 +929,11 @@ function randomColors() {
     if (b.type === 'hero' && p._bgOvC) p._bgOvC = pal.shade;
   });
   applyPage(); renderCanvas(); renderInspector(); save();
-  toast(`🎨 Új színek (${dark ? 'sötét' : 'világos'}) – a betűk, a méretek és az elrendezés maradtak. Nyomd újra, Ctrl+Z visszahozza az előzőt.`);
 }
 
 /* ---------------- toast ---------------- */
 function toast(html, type = '') {
+  $$('#toasts .toast:not(.err)').forEach(t => t.remove());
   const t = document.createElement('div'); t.className = 'toast ' + type; t.innerHTML = html;
   $('#toasts').appendChild(t); setTimeout(() => t.remove(), type === 'err' ? 6000 : 3500);
 }
